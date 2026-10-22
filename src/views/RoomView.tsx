@@ -15,7 +15,6 @@ import { Trash2, ArrowLeft, ShieldAlert, Send, Wifi, WifiOff, Archive, Eraser } 
 import { api } from '../services/api';
 import { RoomSummary } from '../../shared/types';
 import { useRoomSync } from '../hooks/useRoomSync';
-import { DropletMascot } from '../components/brand';
 import confetti from 'canvas-confetti';
 
 export interface RoomViewProps {
@@ -665,7 +664,21 @@ export const RoomView: React.FC<RoomViewProps> = ({
             pointerEvents: 'none',
           }}
         >
-          <DropletMascot mood="excited" size={120} withSparkles={true} />
+          <picture>
+            <source srcSet="/assets/Happy.webp" type="image/webp" />
+            <img
+              src="/assets/Happy.png"
+              alt="Drop files anywhere"
+              width={140}
+              height={140}
+              decoding="async"
+              style={{
+                width: '140px',
+                height: '140px',
+                objectFit: 'contain',
+              }}
+            />
+          </picture>
           <h2
             style={{
               fontFamily: 'var(--font-display)',
@@ -681,9 +694,10 @@ export const RoomView: React.FC<RoomViewProps> = ({
           </h2>
           <div
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-display)',
               fontSize: '15px',
-              fontWeight: 700,
+              fontWeight: 800,
+              letterSpacing: '0.04em',
               backgroundColor: 'var(--color-ink)',
               color: '#FFFFFF',
               padding: '8px 18px',

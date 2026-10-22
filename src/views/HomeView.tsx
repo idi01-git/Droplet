@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
-import { DropletLogo, DropletMascot } from '../components/brand';
+import { DropletLogo } from '../components/brand';
 import { Button, Card, RoomCodeInput, Alert } from '../components/ui';
-import { ArrowRight, Sparkles, Shield, Clock, Zap } from 'lucide-react';
+import { ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
 import { api } from '../services/api';
 import { RoomSummary } from '../../shared/types';
 
@@ -29,7 +29,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
         particleCount: 80,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#FFE000', '#000000', '#00D084', '#3B82F6', '#A855F7'],
+        colors: ['#FFE000', '#000000', '#00D084', '#3B82F6'],
       });
 
       onRoomJoined(result.room, result.sessionToken);
@@ -80,7 +80,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
         }}
       >
         <div style={{ flex: '1 1 480px' }}>
-          <DropletLogo size="lg" layout="horizontal" />
+          <DropletLogo size="lg" layout="horizontal" priority={true} />
           <h1
             style={{
               fontFamily: 'var(--font-display)',
@@ -109,24 +109,24 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
             No logins, no persistent accounts, automatic 24-hour expiration.
           </p>
 
-          {/* Badges */}
+          {/* Value Badges */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '18px' }}>
             <span className="nb-badge" style={{ backgroundColor: '#FFF', border: '2px solid #000', padding: '4px 10px', borderRadius: 'var(--radius-sm)', fontWeight: 800, fontSize: '12px' }}>
-              ⚡ FAST
+              FAST
             </span>
             <span className="nb-badge" style={{ backgroundColor: '#FFF', border: '2px solid #000', padding: '4px 10px', borderRadius: 'var(--radius-sm)', fontWeight: 800, fontSize: '12px' }}>
-              ✨ SIMPLE
+              SIMPLE
             </span>
             <span className="nb-badge" style={{ backgroundColor: '#FFF', border: '2px solid #000', padding: '4px 10px', borderRadius: 'var(--radius-sm)', fontWeight: 800, fontSize: '12px' }}>
-              ⏳ 24H EXPIRY
+              24H EXPIRY
             </span>
             <span className="nb-badge" style={{ backgroundColor: '#000', color: '#FFF', border: '2px solid #000', padding: '4px 10px', borderRadius: 'var(--radius-sm)', fontWeight: 800, fontSize: '12px' }}>
-              🔒 NO LOGIN
+              NO LOGIN
             </span>
           </div>
         </div>
 
-        {/* Mascot */}
+        {/* Authentic Mascot Character */}
         <div
           className="droplet-float"
           style={{
@@ -136,12 +136,27 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
             userSelect: 'none',
           }}
         >
-          <DropletMascot size={150} mood="waving" withSparkles={true} />
+          <picture>
+            <source srcSet="/assets/Happy.webp" type="image/webp" />
+            <img
+              src="/assets/Happy.png"
+              alt="Droplet Mascot"
+              width={160}
+              height={160}
+              fetchPriority="high"
+              decoding="async"
+              style={{
+                width: '160px',
+                height: '160px',
+                objectFit: 'contain',
+              }}
+            />
+          </picture>
           <span
             style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 900,
-              fontSize: '15px',
+              fontSize: '14px',
               letterSpacing: '0.04em',
               color: 'var(--color-ink)',
               backgroundColor: '#FFFFFF',
@@ -149,7 +164,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
               borderRadius: 'var(--radius-md)',
               boxShadow: '2px 2px 0px #000000',
               padding: '4px 12px',
-              marginTop: '8px',
+              marginTop: '6px',
             }}
           >
             DROP • SHARE • DONE
@@ -236,24 +251,49 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
         }}
       >
         <Card variant="default" padding="sm">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Clock size={20} strokeWidth={2.5} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <picture>
+              <source srcSet="/assets/Sq_Logo_Transparent.webp" type="image/webp" />
+              <img
+                src="/assets/Sq_Logo_Transparent.png"
+                alt="24-Hour Expiration"
+                width={42}
+                height={42}
+                loading="lazy"
+                decoding="async"
+                style={{ width: '42px', height: '42px', objectFit: 'contain' }}
+              />
+            </picture>
             <div>
-              <h3 style={{ fontSize: '15px' }}>24-Hour Expiration</h3>
+              <h3 style={{ fontSize: '15px' }}>24-Hour Lifetime</h3>
               <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                Rooms and uploads expire strictly 24 hours after creation.
+                Rooms and files automatically self-destruct 24 hours after creation.
               </p>
             </div>
           </div>
         </Card>
 
         <Card variant="default" padding="sm">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Shield size={20} strokeWidth={2.5} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '42px',
+                height: '42px',
+                backgroundColor: 'var(--color-surface)',
+                borderRadius: 'var(--radius-sm)',
+                border: '2px solid var(--color-ink)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Shield size={22} strokeWidth={2.5} color="var(--color-ink)" />
+            </div>
             <div>
               <h3 style={{ fontSize: '15px' }}>Account-Free & Private</h3>
               <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                No tracking, no sign-ins, and high-entropy device sessions.
+                Zero user tracking, no sign-ins, and high-entropy device sessions.
               </p>
             </div>
           </div>

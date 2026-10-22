@@ -4,7 +4,6 @@ import { HomeView } from './views/HomeView';
 import { RoomView } from './views/RoomView';
 import { ExpiredView } from './views/ExpiredView';
 import { RoomSummary } from '../shared/types';
-import { Sparkles } from 'lucide-react';
 
 const STORAGE_KEY_ROOM = 'droplet_active_room';
 const STORAGE_KEY_TOKEN = 'droplet_session_token';
@@ -111,30 +110,127 @@ export const App: React.FC = () => {
           /* About & Architecture View */
           <div style={{ maxWidth: '840px', margin: '40px auto', padding: '0 20px' }}>
             <Card variant="default" padding="lg">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <Sparkles size={24} strokeWidth={2.5} color="var(--color-primary)" />
-                <h2 style={{ fontSize: '26px' }}>About Droplet</h2>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '20px',
+                  marginBottom: '24px',
+                  paddingBottom: '20px',
+                  borderBottom: 'var(--border-standard)',
+                }}
+              >
+                <div>
+                  <picture>
+                    <source srcSet="/assets/Horizontal_Logo.webp" type="image/webp" />
+                    <img
+                      src="/assets/Horizontal Logo.png"
+                      alt="Droplet"
+                      width={160}
+                      height={53}
+                      decoding="async"
+                      style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+                    />
+                  </picture>
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '18px',
+                      fontWeight: 800,
+                      color: 'var(--color-ink)',
+                      marginTop: '8px',
+                    }}
+                  >
+                    Temporary Peer Sharing Without Accounts
+                  </p>
+                </div>
+
+                <picture>
+                  <source srcSet="/assets/Happy.webp" type="image/webp" />
+                  <img
+                    src="/assets/Happy.png"
+                    alt="Droplet Mascot"
+                    width={90}
+                    height={90}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      width: '90px',
+                      height: '90px',
+                      objectFit: 'contain',
+                    }}
+                  />
+                </picture>
               </div>
 
-              <p style={{ fontSize: '15px', color: 'var(--color-ink)', lineHeight: 1.6, marginBottom: '20px' }}>
-                Droplet is built to solve the frustration of moving text, links, and documents between
-                personal laptops, borrowed machines, and lab PCs without signing into personal email or
-                messaging accounts.
+              <p style={{ fontSize: '15px', color: 'var(--color-ink)', lineHeight: 1.6, marginBottom: '24px' }}>
+                Droplet was created to solve the real annoyance of transferring text, URLs, code snippets,
+                and documents between personal laptops, borrowed machines, and lab PCs without having to sign into
+                personal email, Slack, or messaging services on untrusted devices.
               </p>
 
-              <h3 style={{ fontSize: '18px', marginTop: '20px', marginBottom: '10px' }}>
-                Core Guarantees & Limits (Spec §5)
-              </h3>
-              <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
-                <li><strong>24-Hour Lifetime:</strong> Rooms and uploaded files strictly expire 24 hours after creation.</li>
-                <li><strong>Strict Quotas:</strong> Up to 20 files per room, 50 MiB per file, 200 MiB total per room.</li>
-                <li><strong>Zero Logins:</strong> High-entropy cryptographic device credentials keep sessions private.</li>
-                <li><strong>Owner Controls:</strong> Room creators can immediately delete rooms and revoke all access.</li>
-              </ul>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '28px',
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '2px solid var(--color-ink)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px',
+                  }}
+                >
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: 'var(--color-ink)' }}>
+                    24-HOUR LIFETIME
+                  </span>
+                  <p style={{ fontSize: '13px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                    Rooms and all uploaded files strictly self-destruct after 24 hours.
+                  </p>
+                </div>
 
-              <div style={{ marginTop: '28px' }}>
-                <Button variant="primary" onClick={() => setActiveTab(currentRoom ? 'room' : 'home')}>
-                  {currentRoom ? 'Back to Room' : 'Get Started'}
+                <div
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '2px solid var(--color-ink)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px',
+                  }}
+                >
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: 'var(--color-ink)' }}>
+                    50 MiB PER FILE
+                  </span>
+                  <p style={{ fontSize: '13px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                    Up to 20 files and 200 MiB total per room. Zip download supported.
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '2px solid var(--color-ink)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px',
+                  }}
+                >
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: 'var(--color-ink)' }}>
+                    ZERO TRACKING
+                  </span>
+                  <p style={{ fontSize: '13px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                    High-entropy cryptographic tokens. No cookies or personal accounts.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Button variant="primary" size="md" onClick={() => setActiveTab(currentRoom ? 'room' : 'home')}>
+                  {currentRoom ? 'Return to Room' : 'Get Started'}
                 </Button>
               </div>
             </Card>

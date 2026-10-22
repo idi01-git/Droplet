@@ -8,7 +8,7 @@
   --color-error: #FF6B6B;
   --color-success: #00D084;
   --color-info: #3B82F6;
-  --color-accent: #A855F7;
+  --color-accent: #FFE000;
   --color-muted: #52525B;
   --color-border: #000000;
 
@@ -52,7 +52,7 @@ body {
   color: var(--color-ink);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
 }
 

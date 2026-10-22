@@ -1,11 +1,11 @@
 import React from 'react';
-import DropletMascot from './DropletMascot';
 
 export interface DropletLogoProps {
   layout?: 'horizontal' | 'vertical' | 'icon-only';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showTagline?: boolean;
   className?: string;
+  priority?: boolean;
 }
 
 export const DropletLogo: React.FC<DropletLogoProps> = ({
@@ -13,42 +13,59 @@ export const DropletLogo: React.FC<DropletLogoProps> = ({
   size = 'md',
   showTagline = false,
   className = '',
+  priority = false,
 }) => {
-  const mascotSizes = {
-    sm: 36,
-    md: 48,
-    lg: 72,
-    xl: 100,
+  // Dimensions for 3:1 ratio horizontal brand artwork
+  const horizontalDimensions = {
+    sm: { height: 32, width: 96 },
+    md: { height: 44, width: 132 },
+    lg: { height: 60, width: 180 },
+    xl: { height: 80, width: 240 },
   };
 
-  const textSizes = {
-    sm: 'text-2xl',
-    md: 'text-3xl',
-    lg: 'text-5xl',
-    xl: 'text-6xl',
+  // Dimensions for 1:1 icon
+  const iconDimensions = {
+    sm: 32,
+    md: 44,
+    lg: 64,
+    xl: 96,
   };
 
   if (layout === 'icon-only') {
+    const dim = iconDimensions[size];
     return (
       <div
         className={`droplet-app-icon ${className}`}
         style={{
-          width: mascotSizes[size],
-          height: mascotSizes[size],
-          backgroundColor: 'var(--color-primary)',
-          borderRadius: 'var(--radius-md)',
-          border: 'var(--border-thick)',
-          boxShadow: 'var(--shadow-small)',
-          display: 'flex',
+          width: dim,
+          height: dim,
+          display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'hidden',
         }}
       >
-        <DropletMascot size={mascotSizes[size] * 0.9} withSparkles={false} />
+        <picture>
+          <source srcSet="/assets/Sq_Logo_Transparent.webp" type="image/webp" />
+          <img
+            src="/assets/Sq_Logo_Transparent.png"
+            alt="Droplet"
+            width={dim}
+            height={dim}
+            decoding="async"
+            fetchPriority={priority ? 'high' : 'auto'}
+            style={{
+              width: `${dim}px`,
+              height: `${dim}px`,
+              objectFit: 'contain',
+              display: 'block',
+            }}
+          />
+        </picture>
       </div>
     );
   }
+
+  const { width, height } = horizontalDimensions[size];
 
   return (
     <div
@@ -57,66 +74,41 @@ export const DropletLogo: React.FC<DropletLogoProps> = ({
         display: 'inline-flex',
         flexDirection: layout === 'vertical' ? 'column' : 'row',
         alignItems: 'center',
-        gap: layout === 'vertical' ? '8px' : '14px',
+        gap: '8px',
         userSelect: 'none',
       }}
     >
-      <DropletMascot
-        size={mascotSizes[size]}
-        mood={size === 'xl' ? 'waving' : 'happy'}
-        withSparkles={size === 'lg' || size === 'xl'}
-      />
-
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: layout === 'vertical' ? 'center' : 'flex-start',
-        }}
-      >
-        <span
-          className={`droplet-wordmark ${textSizes[size]}`}
+      <picture>
+        <source srcSet="/assets/Horizontal_Logo.webp" type="image/webp" />
+        <img
+          src="/assets/Horizontal Logo.png"
+          alt="Droplet"
+          width={width}
+          height={height}
+          decoding="async"
+          fetchPriority={priority ? 'high' : 'auto'}
           style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
+            height: `${height}px`,
+            width: `${width}px`,
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
+      </picture>
+
+      {showTagline && (
+        <span
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '14px',
+            fontWeight: 600,
             color: 'var(--color-ink)',
-            lineHeight: 1,
-            position: 'relative',
-            display: 'inline-block',
-            textShadow: '2px 2px 0px rgba(0,0,0,0.1)',
+            letterSpacing: '-0.01em',
           }}
         >
-          Droplet
-          {/* Small hand-drawn dot on top of 'e' or at end */}
-          <span
-            style={{
-              display: 'inline-block',
-              width: '8px',
-              height: '8px',
-              backgroundColor: 'var(--color-primary)',
-              border: '2px solid var(--color-ink)',
-              borderRadius: '50%',
-              marginLeft: '4px',
-              verticalAlign: 'super',
-            }}
-          />
+          Drop anything. Pick it up anywhere.
         </span>
-
-        {showTagline && (
-          <span
-            style={{
-              fontSize: '14px',
-              fontWeight: 500,
-              color: 'var(--color-ink)',
-              marginTop: '4px',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Create a room. Drop anything. Let it disappear.
-          </span>
-        )}
-      </div>
+      )}
     </div>
   );
 };
