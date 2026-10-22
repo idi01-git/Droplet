@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: droplet
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_DRIVER
+        value: local
+      - key: DATA_DIR
+        value: ./data
+      - key: UPLOAD_DIR
+        value: ./uploads
