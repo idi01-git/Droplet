@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Copy, Check, QrCode, Clock } from 'lucide-react';
+import { Copy, Check, QrCode, Clock, Link as LinkIcon } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 export interface RoomInfoBarProps {
   roomCode: string;
@@ -14,7 +15,8 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
   onShowQr,
   className = '',
 }) => {
-  const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Calculate remaining time
   const calculateRemaining = () => {
@@ -25,15 +27,41 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
     return `${hours}h ${minutes}m`;
   };
 
+  const triggerMicroBurst = () => {
+    try {
+      confetti({
+        particleCount: 28,
+        spread: 45,
+        origin: { y: 0.25 },
+        colors: ['#FFE000', '#000000', '#00D084'],
+        disableForReducedMotion: true,
+      });
+    } catch {
+      // Graceful fallback if canvas is unavailable
+    }
+  };
+
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Fallback
     }
+    setCopiedCode(true);
+    triggerMicroBurst();
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      const shareUrl = `${window.location.origin}/?room=${roomCode}`;
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Fallback
+    }
+    setCopiedLink(true);
+    triggerMicroBurst();
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   return (
@@ -52,8 +80,8 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
         gap: '12px',
       }}
     >
-      {/* Room Code Badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* Room Code Badge & Direct Action Strip */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
         <span
           style={{
             fontFamily: 'var(--font-display)',
@@ -82,43 +110,82 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
           {roomCode}
         </span>
 
-        {/* Copy Code */}
+        {/* Copy 4-Digit Code Button */}
         <button
           onClick={handleCopyCode}
           title="Copy room code"
+          aria-label="Copy 4-digit room code"
+          className="nb-button"
           style={{
-            backgroundColor: 'transparent',
+            backgroundColor: copiedCode ? '#E6F9F0' : 'transparent',
             border: '2px solid var(--color-ink)',
             borderRadius: 'var(--radius-sm)',
-            padding: '6px',
+            padding: '6px 10px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: copied ? 'var(--color-success)' : 'var(--color-ink)',
+            gap: '6px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: copiedCode ? '#00875A' : 'var(--color-ink)',
+            transition: 'background-color 0.15s ease',
           }}
         >
-          {copied ? <Check size={16} strokeWidth={3} /> : <Copy size={16} strokeWidth={2.5} />}
+          {copiedCode ? <Check size={15} strokeWidth={3} /> : <Copy size={15} strokeWidth={2.5} />}
+          <span>{copiedCode ? 'Copied!' : 'Code'}</span>
+        </button>
+
+        {/* 1-Click Copy Share Link Button (Priority Delight Item) */}
+        <button
+          onClick={handleCopyLink}
+          title="Copy direct share link to room"
+          aria-label="Copy direct share link to room"
+          className="nb-button"
+          style={{
+            backgroundColor: copiedLink ? '#E6F9F0' : 'var(--color-surface)',
+            border: '2px solid var(--color-ink)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: copiedLink ? '#00875A' : 'var(--color-ink)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {copiedLink ? <Check size={15} strokeWidth={3} /> : <LinkIcon size={15} strokeWidth={2.5} />}
+          <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
         </button>
 
         {/* QR Code toggle */}
         {onShowQr && (
           <button
             onClick={onShowQr}
-            title="Show Room QR Code"
+            title="Show Room QR Code for mobile scanning"
+            aria-label="Show Room QR Code for mobile scanning"
+            className="nb-button"
             style={{
               backgroundColor: 'transparent',
               border: '2px solid var(--color-ink)',
               borderRadius: 'var(--radius-sm)',
-              padding: '6px',
+              padding: '6px 10px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: '6px',
+              fontFamily: 'var(--font-display)',
+              fontSize: '12px',
+              fontWeight: 700,
               color: 'var(--color-ink)',
             }}
           >
-            <QrCode size={16} strokeWidth={2.5} />
+            <QrCode size={15} strokeWidth={2.5} />
+            <span>QR</span>
           </button>
         )}
       </div>

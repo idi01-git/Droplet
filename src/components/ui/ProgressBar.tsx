@@ -37,6 +37,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         aria-valuenow={clampedProgress}
         aria-valuemin={0}
         aria-valuemax={100}
+        aria-label={label}
+        aria-valuetext={`${clampedProgress}% - ${label}`}
         style={{
           width: '100%',
           height: '18px',

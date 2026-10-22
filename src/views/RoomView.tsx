@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   RoomInfoBar,
   Button,
@@ -11,10 +11,12 @@ import {
   ProgressBar,
   FileItemRow,
 } from '../components/ui';
-import { Trash2, ArrowLeft, ShieldAlert, Send, Wifi, WifiOff, Archive } from 'lucide-react';
+import { Trash2, ArrowLeft, ShieldAlert, Send, Wifi, WifiOff, Archive, Eraser } from 'lucide-react';
 import { api } from '../services/api';
 import { RoomSummary } from '../../shared/types';
 import { useRoomSync } from '../hooks/useRoomSync';
+import { DropletMascot } from '../components/brand';
+import confetti from 'canvas-confetti';
 
 export interface RoomViewProps {
   room: RoomSummary;
@@ -42,17 +44,78 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isClearingNotes, setIsClearingNotes] = useState(false);
 
-  // File Upload State
+  // File Upload & Drag State
   const [isDragging, setIsDragging] = useState(false);
+  const [isGlobalDragging, setIsGlobalDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadName, setCurrentUploadName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+
+  // Keyboard shortcut listener: Esc closes modals
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowQrModal(false);
+        setShowDeleteConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Filter notes/links vs files
   const textItems = items.filter((item) => item.type === 'text' || item.type === 'link');
   const fileItems = items.filter((item) => item.type === 'file');
+
+  // Global window-level drag and drop listener (Priority Harden Item)
+  useEffect(() => {
+    const handleWindowDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current += 1;
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsGlobalDragging(true);
+      }
+    };
+
+    const handleWindowDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setIsGlobalDragging(false);
+      }
+    };
+
+    const handleWindowDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+
+    const handleWindowDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current = 0;
+      setIsGlobalDragging(false);
+      const file = e.dataTransfer?.files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    };
+
+    window.addEventListener('dragenter', handleWindowDragEnter);
+    window.addEventListener('dragleave', handleWindowDragLeave);
+    window.addEventListener('dragover', handleWindowDragOver);
+    window.addEventListener('drop', handleWindowDrop);
+
+    return () => {
+      window.removeEventListener('dragenter', handleWindowDragEnter);
+      window.removeEventListener('dragleave', handleWindowDragLeave);
+      window.removeEventListener('dragover', handleWindowDragOver);
+      window.removeEventListener('drop', handleWindowDrop);
+    };
+  }, [fileItems.length]);
 
   // Calculate used storage
   const totalFileBytes = fileItems.reduce((acc, f) => acc + (f.sizeBytes || 0), 0);
@@ -103,6 +166,14 @@ export const RoomView: React.FC<RoomViewProps> = ({
     try {
       await api.uploadFile(room.id, sessionToken, file, (progress) => {
         setUploadProgress(progress);
+      });
+      // Micro-delight: Celebration confetti burst on successful file upload
+      confetti({
+        particleCount: 30,
+        spread: 50,
+        origin: { y: 0.6 },
+        colors: ['#FFE000', '#00D084', '#000000'],
+        disableForReducedMotion: true,
       });
     } catch (err: any) {
       setActionError(err.message || 'Failed to upload file.');
@@ -179,6 +250,20 @@ export const RoomView: React.FC<RoomViewProps> = ({
       setActionError(err.message || 'Failed to delete room.');
       setIsDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleClearAllNotes = async () => {
+    if (textItems.length === 0 || isClearingNotes) return;
+    setIsClearingNotes(true);
+    setActionError(null);
+
+    try {
+      await Promise.all(textItems.map((item) => deleteItem(item.id)));
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to clear notes.');
+    } finally {
+      setIsClearingNotes(false);
     }
   };
 
@@ -332,13 +417,29 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: '16px',
+                flexWrap: 'wrap',
+                gap: '8px',
               }}
             >
-              <h2 style={{ fontSize: '18px' }}>Shared Notes ({textItems.length})</h2>
-              {textItems.length > 0 && (
-                <Badge variant="new" size="sm">
-                  ACTIVE FEED
-                </Badge>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '18px' }}>Shared Notes ({textItems.length})</h2>
+                {textItems.length > 0 && (
+                  <Badge variant="new" size="sm">
+                    ACTIVE FEED
+                  </Badge>
+                )}
+              </div>
+              {room.isOwner && textItems.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="surface"
+                  isLoading={isClearingNotes}
+                  leftIcon={<Eraser size={14} strokeWidth={2.5} />}
+                  onClick={handleClearAllNotes}
+                  title="Clear all shared notes from room"
+                >
+                  Clear Notes
+                </Button>
               )}
             </div>
 
@@ -541,6 +642,55 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 Yes, Delete Room
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-viewport Drag and Drop Overlay (Harden & Delight) */}
+      {isGlobalDragging && (
+        <div
+          role="region"
+          aria-label="Drop files overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(255, 224, 0, 0.95)',
+            border: '8px dashed var(--color-ink)',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            pointerEvents: 'none',
+          }}
+        >
+          <DropletMascot mood="excited" size={120} withSparkles={true} />
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '36px',
+              fontWeight: 900,
+              color: 'var(--color-ink)',
+              textTransform: 'uppercase',
+              letterSpacing: '-0.02em',
+              textAlign: 'center',
+            }}
+          >
+            Drop files anywhere to share!
+          </h2>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '15px',
+              fontWeight: 700,
+              backgroundColor: 'var(--color-ink)',
+              color: '#FFFFFF',
+              padding: '8px 18px',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            ROOM {room.code} · UP TO 50 MiB PER FILE
           </div>
         </div>
       )}
