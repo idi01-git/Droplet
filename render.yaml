@@ -12,7 +12,15 @@ services:
       - key: NODE_ENV
         value: production
       - key: STORAGE_DRIVER
-        value: local
+        value: s3
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_BUCKET_NAME
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
       - key: DATA_DIR
         value: ./data
       - key: UPLOAD_DIR
