@@ -296,18 +296,67 @@ input, textarea {
   .hero-grid-layout {
     flex-direction: column !important;
     align-items: center !important;
-    text-align: center !important;
-    gap: 20px !important;
-    padding: clamp(52px, 7vh, 72px) 16px 24px 16px !important;
+    text-align: left !important;
+    gap: 16px !important;
+    padding: clamp(16px, 2.5vh, 28px) 16px clamp(16px, 2vh, 24px) 16px !important;
     justify-content: space-between !important;
     min-height: calc(100dvh - 64px) !important;
+    box-sizing: border-box !important;
   }
 
   .hero-mascot-wrapper {
     order: -1;
-    max-width: 165px !important;
-    max-height: 165px !important;
-    margin: 0 auto;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: min(88vw, 360px) !important;
+    height: clamp(230px, 36vh, 360px) !important;
+    max-height: 40vh !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .hero-mascot-inner,
+  .hero-mascot-wrapper > div {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .hero-mascot-wrapper picture {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .hero-mascot-wrapper img {
+    width: auto !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    filter: drop-shadow(6px 8px 0px rgba(0,0,0,0.15)) !important;
+  }
+
+  .hero-content-column {
+    width: 100% !important;
+    max-width: 480px !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hero-headline {
+    font-size: clamp(30px, 7.5vw, 42px) !important;
+    line-height: 1.1 !important;
+    margin-bottom: 12px !important;
   }
 
   .hero-bottom-actions {

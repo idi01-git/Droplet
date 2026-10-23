@@ -244,6 +244,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
         >
           {/* Left Column: Hero Content & Features (Max 48% VW for balance) */}
           <div
+            className="hero-content-column"
             style={{
               width: '100%',
               maxWidth: 'clamp(360px, 48vw, 610px)',
@@ -265,6 +266,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
 
             {/* 2. Bold Neo-Brutalist Title (15% Larger, Strict 2-Line Punchy Presentation) */}
             <h1
+              className="hero-headline"
               style={{
                 fontFamily: 'var(--font-display)',
                 fontSize: 'clamp(39px, 4.4vw, 58px)',
@@ -485,10 +487,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
             }}
           >
             <div
+              className="hero-mascot-inner"
               style={{
                 position: 'relative',
-                width: 'clamp(300px, 36vw, 520px)',
-                height: 'clamp(300px, 36vw, 520px)',
+                width: 'clamp(360px, 42vw, 560px)',
+                height: 'clamp(360px, 42vw, 560px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
