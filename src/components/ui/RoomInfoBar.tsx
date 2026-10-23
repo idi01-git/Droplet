@@ -78,61 +78,25 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
   };
 
   return (
-    <div
-      className={`nb-room-info-bar ${className}`}
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#FFFFFF',
-        border: '2.5px solid #000000',
-        borderRadius: '16px',
-        boxShadow: '4px 4px 0px #000000',
-        padding: '10px 16px',
-        gap: '12px',
-      }}
-    >
-      {/* Left Cluster: Leave + Wifi Status Logo (Green/Red) + Divider + Room Code Button + Single Share Button */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '10px',
-        }}
-      >
+    <div className={`nb-room-info-bar ${className}`}>
+      {/* Primary Tier: Leave, Room Code with Integrated Live Sync Dot, and Share */}
+      <div className="nb-room-bar-primary">
         {/* Leave Room Action */}
         {onLeave && (
           <button
             onClick={onLeave}
-            className="nb-button"
+            className="nb-button nb-room-btn-leave"
             title="Leave this room and return home"
             aria-label="Leave room"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              backgroundColor: '#FFFFFF',
-              border: '2px solid #000000',
-              borderRadius: '10px',
-              boxShadow: '2px 2px 0px #000000',
-              padding: '7px 12px',
-              fontFamily: 'var(--font-display)',
-              fontSize: '13px',
-              fontWeight: 800,
-              color: '#000000',
-              cursor: 'pointer',
-              transition: 'all 0.12s ease',
-            }}
           >
             <ArrowLeftIcon size={14} />
             <span>Leave</span>
           </button>
         )}
 
-        {/* Wifi Realtime Status Logo (Green if live, Red if not live - NO noisy text) */}
+        {/* Desktop-only dedicated Wifi indicator */}
         <div
+          className="nb-room-wifi-desktop"
           title={
             isConnected
               ? 'Realtime Sync: Connected (Live)'
@@ -140,90 +104,59 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
           }
           aria-label={isConnected ? 'Realtime Sync Connected' : 'Realtime Sync Disconnected'}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '32px',
-            height: '32px',
-            borderRadius: '10px',
             backgroundColor: isConnected ? '#E6F9F0' : '#FFF0F0',
-            border: '2px solid #000000',
-            boxShadow: '1.5px 1.5px 0px #000000',
             color: isConnected ? '#00875A' : '#DE350B',
-            cursor: 'help',
-            flexShrink: 0,
-            transition: 'all 0.15s ease',
           }}
         >
-          <WifiIcon size={18} color={isConnected ? '#00875A' : '#DE350B'} strokeWidth={2.4} />
+          <WifiIcon size={17} color={isConnected ? '#00875A' : '#DE350B'} strokeWidth={2.4} />
         </div>
 
-        {/* Subtle Divider */}
-        <div
-          style={{
-            width: '1.5px',
-            height: '22px',
-            backgroundColor: 'rgba(0, 0, 0, 0.18)',
-            margin: '0 2px',
-          }}
-        />
+        {/* Desktop Divider */}
+        <div className="nb-room-divider" aria-hidden="true" />
 
         {/* Hero Interactive Room Code Badge (Click to Copy 4-Digit Code) */}
         <button
           onClick={handleCopyCode}
           title="Click to copy 4-digit room code"
           aria-label={`Copy room code ${roomCode}`}
-          className="nb-button"
+          className="nb-button nb-room-code-badge"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
             backgroundColor: copiedCode ? '#E6F9F0' : '#FFE000',
-            border: '2px solid #000000',
-            borderRadius: '10px',
-            boxShadow: '2.5px 2.5px 0px #000000',
-            padding: '6px 14px',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
-            color: '#000000',
-            transition: 'all 0.15s ease',
           }}
         >
+          <span className="nb-room-badge-tag">ROOM</span>
+          <span className="nb-room-badge-code">{roomCode}</span>
+
+          {/* Realtime Live Dot Indicator */}
           <span
+            className="nb-room-live-dot"
+            title={isConnected ? 'Live: Realtime sync active' : 'Reconnecting...'}
             style={{
-              fontSize: '11px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              opacity: 0.65,
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              backgroundColor: isConnected ? '#00A86B' : '#DE350B',
+              boxShadow: isConnected ? '0 0 0 2px rgba(0, 168, 107, 0.25)' : 'none',
+              display: 'inline-block',
+              flexShrink: 0,
             }}
-          >
-            ROOM
-          </span>
-          <span
-            style={{
-              fontSize: '18px',
-              fontWeight: 900,
-              letterSpacing: '2.5px',
-            }}
-          >
-            {roomCode}
-          </span>
+          />
+
           {copiedCode ? (
             <span
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '3px',
-                fontSize: '11.5px',
+                fontSize: '11px',
                 fontWeight: 800,
                 color: '#00875A',
               }}
             >
-              <CheckCircleIcon size={14} /> Copied!
+              <CheckCircleIcon size={13} /> Copied!
             </span>
           ) : (
-            <CopyIcon size={14} style={{ opacity: 0.55 }} />
+            <CopyIcon size={13} style={{ opacity: 0.6 }} />
           )}
         </button>
 
@@ -233,56 +166,22 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
             onClick={handleShareClick}
             title="Share room via QR code or direct link"
             aria-label="Share room"
-            className="nb-button"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              backgroundColor: '#FFFFFF',
-              border: '2px solid #000000',
-              borderRadius: '10px',
-              boxShadow: '2px 2px 0px #000000',
-              padding: '7px 14px',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-display)',
-              fontSize: '13px',
-              fontWeight: 800,
-              color: '#000000',
-              transition: 'all 0.12s ease',
-            }}
+            className="nb-button nb-room-btn-share"
           >
-            <ShareIcon size={15} />
+            <ShareIcon size={14} />
             <span>Share</span>
           </button>
         )}
       </div>
 
-      {/* Right Cluster: Expiry Countdown + Delete Room Danger Action */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '10px',
-        }}
-      >
+      {/* Mobile Subtle Dashed Divider */}
+      <div className="nb-room-mobile-divider" aria-hidden="true" />
+
+      {/* Secondary Tier: Expiry Countdown + Delete Room Danger Action */}
+      <div className="nb-room-bar-secondary">
         {/* Expiry Countdown */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            backgroundColor: '#FFF8B8',
-            border: '2px solid #000000',
-            borderRadius: 'var(--radius-full)',
-            padding: '5px 12px',
-            fontFamily: 'var(--font-display)',
-            fontSize: '12.5px',
-            fontWeight: 800,
-            color: '#000000',
-          }}
-        >
-          <ClockIcon size={14} />
+        <div className="nb-room-expiry-chip">
+          <ClockIcon size={13} />
           <span>Expires in {calculateRemaining()}</span>
         </div>
 
@@ -292,25 +191,9 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
             onClick={onDelete}
             title="Permanently delete this room"
             aria-label="Delete this room"
-            className="nb-button"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              backgroundColor: '#FFE6E6',
-              border: '2px solid #000000',
-              borderRadius: '10px',
-              boxShadow: '2px 2px 0px #000000',
-              padding: '6px 12px',
-              fontFamily: 'var(--font-display)',
-              fontSize: '12.5px',
-              fontWeight: 800,
-              color: '#D32F2F',
-              cursor: 'pointer',
-              transition: 'all 0.12s ease',
-            }}
+            className="nb-button nb-room-btn-delete"
           >
-            <TrashIcon size={14} />
+            <TrashIcon size={13} />
             <span>Delete Room</span>
           </button>
         )}
