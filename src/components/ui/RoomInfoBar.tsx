@@ -1,22 +1,39 @@
 import React, { useState } from 'react';
-import { Copy, Check, QrCode, Clock, Link as LinkIcon } from 'lucide-react';
+import {
+  CopyIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ArrowLeftIcon,
+  TrashIcon,
+  WifiIcon,
+  ShareIcon,
+} from '../icons';
 import confetti from 'canvas-confetti';
 
 export interface RoomInfoBarProps {
   roomCode: string;
   expiresAt: number; // Unix timestamp ms
-  onShowQr?: () => void;
+  isConnected?: boolean;
+  onLeave?: () => void;
+  isOwner?: boolean;
+  onDelete?: () => void;
+  onShare?: () => void;
+  onShowQr?: () => void; // Supported for backward compatibility
   className?: string;
 }
 
 export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
   roomCode,
   expiresAt,
+  isConnected = true,
+  onLeave,
+  isOwner = false,
+  onDelete,
+  onShare,
   onShowQr,
   className = '',
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   // Calculate remaining time
   const calculateRemaining = () => {
@@ -52,16 +69,12 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleCopyLink = async () => {
-    try {
-      const shareUrl = `${window.location.origin}/?room=${roomCode}`;
-      await navigator.clipboard.writeText(shareUrl);
-    } catch {
-      // Fallback
+  const handleShareClick = () => {
+    if (onShare) {
+      onShare();
+    } else if (onShowQr) {
+      onShowQr();
     }
-    setCopiedLink(true);
-    triggerMicroBurst();
-    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   return (
@@ -72,142 +85,235 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'var(--color-surface-card)',
-        border: 'var(--border-thick)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-standard)',
-        padding: '12px 18px',
+        backgroundColor: '#FFFFFF',
+        border: '2.5px solid #000000',
+        borderRadius: '16px',
+        boxShadow: '4px 4px 0px #000000',
+        padding: '10px 16px',
         gap: '12px',
       }}
     >
-      {/* Room Code Badge & Direct Action Strip */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
-        <span
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '13px',
-            fontWeight: 700,
-            color: 'var(--color-muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-          }}
-        >
-          Room
-        </span>
-        <span
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '22px',
-            fontWeight: 800,
-            letterSpacing: '3px',
-            color: 'var(--color-ink)',
-            backgroundColor: 'var(--color-primary)',
-            padding: '2px 10px',
-            borderRadius: 'var(--radius-sm)',
-            border: '2px solid var(--color-ink)',
-          }}
-        >
-          {roomCode}
-        </span>
-
-        {/* Copy 4-Digit Code Button */}
-        <button
-          onClick={handleCopyCode}
-          title="Copy room code"
-          aria-label="Copy 4-digit room code"
-          className="nb-button"
-          style={{
-            backgroundColor: copiedCode ? '#E6F9F0' : 'transparent',
-            border: '2px solid var(--color-ink)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '6px 10px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-display)',
-            fontSize: '12px',
-            fontWeight: 700,
-            color: copiedCode ? '#00875A' : 'var(--color-ink)',
-            transition: 'background-color 0.15s ease',
-          }}
-        >
-          {copiedCode ? <Check size={15} strokeWidth={3} /> : <Copy size={15} strokeWidth={2.5} />}
-          <span>{copiedCode ? 'Copied!' : 'Code'}</span>
-        </button>
-
-        {/* 1-Click Copy Share Link Button (Priority Delight Item) */}
-        <button
-          onClick={handleCopyLink}
-          title="Copy direct share link to room"
-          aria-label="Copy direct share link to room"
-          className="nb-button"
-          style={{
-            backgroundColor: copiedLink ? '#E6F9F0' : 'var(--color-surface)',
-            border: '2px solid var(--color-ink)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '6px 12px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-display)',
-            fontSize: '12px',
-            fontWeight: 700,
-            color: copiedLink ? '#00875A' : 'var(--color-ink)',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          {copiedLink ? <Check size={15} strokeWidth={3} /> : <LinkIcon size={15} strokeWidth={2.5} />}
-          <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
-        </button>
-
-        {/* QR Code toggle */}
-        {onShowQr && (
-          <button
-            onClick={onShowQr}
-            title="Show Room QR Code for mobile scanning"
-            aria-label="Show Room QR Code for mobile scanning"
-            className="nb-button"
-            style={{
-              backgroundColor: 'transparent',
-              border: '2px solid var(--color-ink)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '6px 10px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontFamily: 'var(--font-display)',
-              fontSize: '12px',
-              fontWeight: 700,
-              color: 'var(--color-ink)',
-            }}
-          >
-            <QrCode size={15} strokeWidth={2.5} />
-            <span>QR</span>
-          </button>
-        )}
-      </div>
-
-      {/* Expiry Countdown */}
+      {/* Left Cluster: Leave + Wifi Status Logo (Green/Red) + Divider + Room Code Button + Single Share Button */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          backgroundColor: '#FFF8B8',
-          border: '2px solid var(--color-ink)',
-          borderRadius: 'var(--radius-full)',
-          padding: '4px 12px',
-          fontFamily: 'var(--font-display)',
-          fontSize: '13px',
-          fontWeight: 700,
-          color: 'var(--color-ink)',
+          flexWrap: 'wrap',
+          gap: '10px',
         }}
       >
-        <Clock size={15} strokeWidth={2.5} />
-        <span>Expires in {calculateRemaining()}</span>
+        {/* Leave Room Action */}
+        {onLeave && (
+          <button
+            onClick={onLeave}
+            className="nb-button"
+            title="Leave this room and return home"
+            aria-label="Leave room"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#FFFFFF',
+              border: '2px solid #000000',
+              borderRadius: '10px',
+              boxShadow: '2px 2px 0px #000000',
+              padding: '7px 12px',
+              fontFamily: 'var(--font-display)',
+              fontSize: '13px',
+              fontWeight: 800,
+              color: '#000000',
+              cursor: 'pointer',
+              transition: 'all 0.12s ease',
+            }}
+          >
+            <ArrowLeftIcon size={14} />
+            <span>Leave</span>
+          </button>
+        )}
+
+        {/* Wifi Realtime Status Logo (Green if live, Red if not live - NO noisy text) */}
+        <div
+          title={
+            isConnected
+              ? 'Realtime Sync: Connected (Live)'
+              : 'Realtime Sync: Disconnected / Reconnecting...'
+          }
+          aria-label={isConnected ? 'Realtime Sync Connected' : 'Realtime Sync Disconnected'}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            borderRadius: '10px',
+            backgroundColor: isConnected ? '#E6F9F0' : '#FFF0F0',
+            border: '2px solid #000000',
+            boxShadow: '1.5px 1.5px 0px #000000',
+            color: isConnected ? '#00875A' : '#DE350B',
+            cursor: 'help',
+            flexShrink: 0,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <WifiIcon size={18} color={isConnected ? '#00875A' : '#DE350B'} strokeWidth={2.4} />
+        </div>
+
+        {/* Subtle Divider */}
+        <div
+          style={{
+            width: '1.5px',
+            height: '22px',
+            backgroundColor: 'rgba(0, 0, 0, 0.18)',
+            margin: '0 2px',
+          }}
+        />
+
+        {/* Hero Interactive Room Code Badge (Click to Copy 4-Digit Code) */}
+        <button
+          onClick={handleCopyCode}
+          title="Click to copy 4-digit room code"
+          aria-label={`Copy room code ${roomCode}`}
+          className="nb-button"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: copiedCode ? '#E6F9F0' : '#FFE000',
+            border: '2px solid #000000',
+            borderRadius: '10px',
+            boxShadow: '2.5px 2.5px 0px #000000',
+            padding: '6px 14px',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-display)',
+            color: '#000000',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              opacity: 0.65,
+            }}
+          >
+            ROOM
+          </span>
+          <span
+            style={{
+              fontSize: '18px',
+              fontWeight: 900,
+              letterSpacing: '2.5px',
+            }}
+          >
+            {roomCode}
+          </span>
+          {copiedCode ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                fontSize: '11.5px',
+                fontWeight: 800,
+                color: '#00875A',
+              }}
+            >
+              <CheckCircleIcon size={14} /> Copied!
+            </span>
+          ) : (
+            <CopyIcon size={14} style={{ opacity: 0.55 }} />
+          )}
+        </button>
+
+        {/* Unified Single Share Button (Opens modal with QR code & Copy Link) */}
+        {(onShare || onShowQr) && (
+          <button
+            onClick={handleShareClick}
+            title="Share room via QR code or direct link"
+            aria-label="Share room"
+            className="nb-button"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#FFFFFF',
+              border: '2px solid #000000',
+              borderRadius: '10px',
+              boxShadow: '2px 2px 0px #000000',
+              padding: '7px 14px',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-display)',
+              fontSize: '13px',
+              fontWeight: 800,
+              color: '#000000',
+              transition: 'all 0.12s ease',
+            }}
+          >
+            <ShareIcon size={15} />
+            <span>Share</span>
+          </button>
+        )}
+      </div>
+
+      {/* Right Cluster: Expiry Countdown + Delete Room Danger Action */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px',
+        }}
+      >
+        {/* Expiry Countdown */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#FFF8B8',
+            border: '2px solid #000000',
+            borderRadius: 'var(--radius-full)',
+            padding: '5px 12px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '12.5px',
+            fontWeight: 800,
+            color: '#000000',
+          }}
+        >
+          <ClockIcon size={14} />
+          <span>Expires in {calculateRemaining()}</span>
+        </div>
+
+        {/* Delete Room Button (Owner Only) */}
+        {isOwner && onDelete && (
+          <button
+            onClick={onDelete}
+            title="Permanently delete this room"
+            aria-label="Delete this room"
+            className="nb-button"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#FFE6E6',
+              border: '2px solid #000000',
+              borderRadius: '10px',
+              boxShadow: '2px 2px 0px #000000',
+              padding: '6px 12px',
+              fontFamily: 'var(--font-display)',
+              fontSize: '12.5px',
+              fontWeight: 800,
+              color: '#D32F2F',
+              cursor: 'pointer',
+              transition: 'all 0.12s ease',
+            }}
+          >
+            <TrashIcon size={14} />
+            <span>Delete Room</span>
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, ExternalLink } from 'lucide-react';
+import { CopyIcon, CheckCircleIcon, ExternalLinkIcon } from '../icons';
 import Badge from './Badge';
 
 export interface MessageBubbleProps {
@@ -129,7 +129,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 color: copied ? 'var(--color-success)' : 'var(--color-ink)',
               }}
             >
-              {copied ? <Check size={14} strokeWidth={3} /> : <Copy size={14} strokeWidth={2.5} />}
+              {copied ? <CheckCircleIcon size={14} /> : <CopyIcon size={14} />}
               <span>{copied ? 'COPIED!' : 'COPY'}</span>
             </button>
 
@@ -183,7 +183,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               }}
             >
               {text}
-              <ExternalLink size={14} strokeWidth={2.5} />
+              <ExternalLinkIcon size={14} />
             </a>
           ) : (
             text

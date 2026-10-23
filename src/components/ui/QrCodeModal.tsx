@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { X, Copy, Check } from 'lucide-react';
+import { CloseIcon, CopyIcon, CheckCircleIcon } from '../icons';
 import { Button } from './Button';
+
+import confetti from 'canvas-confetti';
 
 export interface QrCodeModalProps {
   roomCode: string;
@@ -37,12 +39,22 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ roomCode, isOpen, onCl
   const handleCopyUrl = async () => {
     try {
       await navigator.clipboard.writeText(roomUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Fallback
     }
+    setCopied(true);
+    try {
+      confetti({
+        particleCount: 24,
+        spread: 40,
+        origin: { y: 0.6 },
+        colors: ['#FFE000', '#000000', '#00D084'],
+        disableForReducedMotion: true,
+      });
+    } catch {
+      // Ignore
+    }
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -102,20 +114,32 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ roomCode, isOpen, onCl
             backgroundColor: 'var(--color-surface)',
           }}
         >
-          <X size={18} strokeWidth={3} />
+          <CloseIcon size={18} />
         </button>
 
-        <h3
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '22px',
-            fontWeight: 800,
-            color: 'var(--color-ink)',
-            textAlign: 'center',
-          }}
-        >
-          Scan to Join Room
-        </h3>
+        <div style={{ textAlign: 'center', width: '100%' }}>
+          <h3
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '22px',
+              fontWeight: 800,
+              color: 'var(--color-ink)',
+              margin: '0 0 4px 0',
+            }}
+          >
+            Share Room
+          </h3>
+          <p
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '13px',
+              color: 'var(--color-muted)',
+              margin: 0,
+            }}
+          >
+            Scan with your phone or copy the direct link below
+          </p>
+        </div>
 
         {/* QR Code Canvas */}
         <div
@@ -179,7 +203,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ roomCode, isOpen, onCl
           variant="surface"
           fullWidth
           size="sm"
-          leftIcon={copied ? <Check size={16} strokeWidth={3} /> : <Copy size={16} strokeWidth={2.5} />}
+          leftIcon={copied ? <CheckCircleIcon size={16} /> : <CopyIcon size={16} />}
           onClick={handleCopyUrl}
         >
           {copied ? 'Link Copied!' : 'Copy Direct Link'}

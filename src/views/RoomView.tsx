@@ -11,10 +11,11 @@ import {
   ProgressBar,
   FileItemRow,
 } from '../components/ui';
-import { Trash2, ArrowLeft, ShieldAlert, Send, Wifi, WifiOff, Archive, Eraser } from 'lucide-react';
+import { TrashIcon, ShieldIcon, SendIcon, ArchiveIcon, EraserIcon } from '../components/icons';
 import { api } from '../services/api';
 import { RoomSummary } from '../../shared/types';
 import { useRoomSync } from '../hooks/useRoomSync';
+import { recentRoomsService } from '../services/recentRooms';
 import confetti from 'canvas-confetti';
 
 export interface RoomViewProps {
@@ -66,9 +67,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Filter notes/links vs files
-  const textItems = items.filter((item) => item.type === 'text' || item.type === 'link');
-  const fileItems = items.filter((item) => item.type === 'file');
+  // Filter notes/links vs files, sorted latest first (newest on top)
+  const textItems = [...items.filter((item) => item.type === 'text' || item.type === 'link')].sort(
+    (a, b) => b.createdAt - a.createdAt
+  );
+  const fileItems = [...items.filter((item) => item.type === 'file')].sort(
+    (a, b) => b.createdAt - a.createdAt
+  );
 
   // Global window-level drag and drop listener (Priority Harden Item)
   useEffect(() => {
@@ -97,9 +102,9 @@ export const RoomView: React.FC<RoomViewProps> = ({
       e.preventDefault();
       dragCounter.current = 0;
       setIsGlobalDragging(false);
-      const file = e.dataTransfer?.files?.[0];
-      if (file) {
-        handleFileUpload(file);
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length > 0) {
+        handleUploadFiles(files);
       }
     };
 
@@ -143,39 +148,87 @@ export const RoomView: React.FC<RoomViewProps> = ({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!file) return;
+  const handleUploadFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
 
-    // Fast client-side pre-check for UX (Spec Section 0.5)
-    if (file.size > 50 * 1024 * 1024) {
-      setActionError(`"${file.name}" exceeds the 50 MiB limit (${(file.size / (1024 * 1024)).toFixed(1)} MiB).`);
+    // Constraint 1: Maximum 20 files per room
+    const remainingSlots = 20 - fileItems.length;
+    if (remainingSlots <= 0) {
+      setActionError('Maximum limit of 20 files reached for this room.');
+      return;
+    }
+    if (files.length > remainingSlots) {
+      setActionError(
+        `Cannot upload ${files.length} file(s). Only ${remainingSlots} slot(s) remaining (maximum 20 files per room).`
+      );
       return;
     }
 
-    if (fileItems.length >= 20) {
-      setActionError('Maximum limit of 20 files reached for this room.');
+    // Constraint 2: Individual file size limit (50 MiB)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024;
+    const oversized = files.find((f) => f.size > MAX_FILE_SIZE);
+    if (oversized) {
+      setActionError(
+        `"${oversized.name}" exceeds the 50 MiB limit (${(oversized.size / (1024 * 1024)).toFixed(1)} MiB).`
+      );
+      return;
+    }
+
+    // Constraint 3: Total room capacity limit (200 MiB)
+    const MAX_ROOM_BYTES = 200 * 1024 * 1024;
+    const incomingBytes = files.reduce((acc, f) => acc + f.size, 0);
+    if (totalFileBytes + incomingBytes > MAX_ROOM_BYTES) {
+      const remainingBytes = Math.max(0, MAX_ROOM_BYTES - totalFileBytes);
+      setActionError(
+        `Selected files (${(incomingBytes / (1024 * 1024)).toFixed(1)} MB) exceed available room capacity (${(remainingBytes / (1024 * 1024)).toFixed(1)} MB remaining of 200 MB quota).`
+      );
       return;
     }
 
     setIsUploading(true);
-    setUploadProgress(0);
-    setCurrentUploadName(file.name);
     setActionError(null);
 
+    const totalFiles = files.length;
+    let successfulCount = 0;
+    const failedFiles: { name: string; error: string }[] = [];
+
     try {
-      await api.uploadFile(room.id, sessionToken, file, (progress) => {
-        setUploadProgress(progress);
-      });
-      // Micro-delight: Celebration confetti burst on successful file upload
-      confetti({
-        particleCount: 30,
-        spread: 50,
-        origin: { y: 0.6 },
-        colors: ['#FFE000', '#00D084', '#000000'],
-        disableForReducedMotion: true,
-      });
-    } catch (err: any) {
-      setActionError(err.message || 'Failed to upload file.');
+      for (let i = 0; i < totalFiles; i++) {
+        const file = files[i];
+        const label = totalFiles > 1 ? `(${i + 1}/${totalFiles}) ${file.name}` : file.name;
+        setCurrentUploadName(label);
+        setUploadProgress(0);
+
+        try {
+          await api.uploadFile(room.id, sessionToken, file, (progress) => {
+            const overall = Math.round(((i + progress / 100) / totalFiles) * 100);
+            setUploadProgress(overall);
+          });
+          successfulCount++;
+        } catch (err: any) {
+          failedFiles.push({ name: file.name, error: err.message || 'Upload failed' });
+        }
+      }
+
+      if (successfulCount > 0) {
+        try {
+          confetti({
+            particleCount: 35,
+            spread: 55,
+            origin: { y: 0.6 },
+            colors: ['#FFE000', '#00D084', '#000000'],
+            disableForReducedMotion: true,
+          });
+        } catch {
+          // Ignore
+        }
+      }
+
+      if (failedFiles.length > 0) {
+        setActionError(
+          `${successfulCount} of ${totalFiles} file(s) uploaded. Failed: ${failedFiles.map((f) => `"${f.name}" (${f.error})`).join(', ')}`
+        );
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -187,9 +240,9 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      handleUploadFiles(files);
     }
   };
 
@@ -206,9 +259,9 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFileUpload(file);
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length > 0) {
+      handleUploadFiles(files);
     }
   };
 
@@ -244,6 +297,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
 
     try {
       await api.deleteRoom(room.id, sessionToken);
+      recentRoomsService.removeRecentRoom(room.code);
       onLeave();
     } catch (err: any) {
       setActionError(err.message || 'Failed to delete room.');
@@ -268,71 +322,9 @@ export const RoomView: React.FC<RoomViewProps> = ({
 
   return (
     <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '24px 20px' }}>
-      {/* Top Header Actions */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Button
-            variant="surface"
-            size="sm"
-            leftIcon={<ArrowLeft size={16} strokeWidth={2.5} />}
-            onClick={onLeave}
-          >
-            Leave Room
-          </Button>
-
-          {/* Realtime Connection Status Pill */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-full)',
-              border: '2px solid var(--color-ink)',
-              backgroundColor: isConnected ? '#E6F9F0' : '#FFF0F0',
-              fontFamily: 'var(--font-display)',
-              fontSize: '12px',
-              fontWeight: 800,
-            }}
-          >
-            {isConnected ? (
-              <>
-                <Wifi size={14} strokeWidth={3} color="var(--color-success)" />
-                <span style={{ color: '#00875A' }}>LIVE SYNC</span>
-              </>
-            ) : (
-              <>
-                <WifiOff size={14} strokeWidth={3} color="var(--color-error)" />
-                <span style={{ color: '#DE350B' }}>CONNECTING...</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {room.isOwner && (
-          <Button
-            variant="danger"
-            size="sm"
-            leftIcon={<Trash2 size={16} strokeWidth={2.5} />}
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            Delete Room
-          </Button>
-        )}
-      </div>
-
       {/* Error Alerts */}
       {(actionError || syncError) && (
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <Alert
             variant="error"
             message={actionError || syncError || ''}
@@ -341,12 +333,16 @@ export const RoomView: React.FC<RoomViewProps> = ({
         </div>
       )}
 
-      {/* Room Info Bar (Code, Countdown, QR) */}
-      <div style={{ marginBottom: '28px' }}>
+      {/* Unified Master Control Deck (Leave, Wifi Status Logo, Code Badge, Share Button, Expiry, Delete) */}
+      <div style={{ marginBottom: '24px' }}>
         <RoomInfoBar
           roomCode={room.code}
           expiresAt={room.expiresAt}
-          onShowQr={() => setShowQrModal(true)}
+          isConnected={isConnected}
+          onLeave={onLeave}
+          isOwner={room.isOwner}
+          onDelete={() => setShowDeleteConfirm(true)}
+          onShare={() => setShowQrModal(true)}
         />
       </div>
 
@@ -399,7 +395,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                   variant="primary"
                   isLoading={isSending}
                   disabled={!composerText.trim()}
-                  rightIcon={<Send size={14} strokeWidth={2.5} />}
+                  rightIcon={<SendIcon size={16} />}
                   onClick={handleSendText}
                 >
                   Drop Item
@@ -433,7 +429,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                   size="sm"
                   variant="surface"
                   isLoading={isClearingNotes}
-                  leftIcon={<Eraser size={14} strokeWidth={2.5} />}
+                  leftIcon={<EraserIcon size={14} />}
                   onClick={handleClearAllNotes}
                   title="Clear all shared notes from room"
                 >
@@ -489,7 +485,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                     size="sm"
                     variant="surface"
                     isLoading={isDownloadingZip}
-                    leftIcon={<Archive size={14} strokeWidth={2.5} />}
+                    leftIcon={<ArchiveIcon size={14} />}
                     onClick={handleDownloadZip}
                     title="Download all files and notes as a ZIP"
                   >
@@ -499,10 +495,11 @@ export const RoomView: React.FC<RoomViewProps> = ({
               </div>
             </div>
 
-            {/* Hidden native file input */}
+            {/* Hidden native file input with multiple selection */}
             <input
               type="file"
               ref={fileInputRef}
+              multiple
               style={{ display: 'none' }}
               onChange={handleFileInputChange}
             />
@@ -526,8 +523,8 @@ export const RoomView: React.FC<RoomViewProps> = ({
             >
               <EmptyState
                 title="Drop files here or click to browse"
-                description="Drop up to 50 MiB per file. Automatically deletes in 24 hours."
-                actionText="Upload File"
+                description="Drop single or multiple files (up to 50 MiB each). Automatically deletes in 24 hours."
+                actionText="Upload Files"
                 isDragOver={isDragging}
                 onAction={() => fileInputRef.current?.click()}
               />
@@ -610,7 +607,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                   justifyContent: 'center',
                 }}
               >
-                <ShieldAlert size={24} color="#000000" />
+                <ShieldIcon size={24} />
               </div>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800 }}>
                 Delete Room Immediately?
@@ -635,7 +632,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 variant="danger"
                 size="sm"
                 isLoading={isDeleting}
-                leftIcon={<Trash2 size={16} strokeWidth={2.5} />}
+                leftIcon={<TrashIcon size={16} />}
                 onClick={handleDeleteRoom}
               >
                 Yes, Delete Room
@@ -704,7 +701,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
               borderRadius: 'var(--radius-sm)',
             }}
           >
-            ROOM {room.code} · UP TO 50 MiB PER FILE
+            ROOM {room.code} · UP TO 50 MiB PER FILE · UP TO 20 FILES
           </div>
         </div>
       )}

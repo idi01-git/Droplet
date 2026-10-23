@@ -23,3 +23,4 @@ export * from './FileItemRow';
 export * from './RoomInfoBar';
 export * from './Navbar';
 export * from './QrCodeModal';
+export * from '../icons';

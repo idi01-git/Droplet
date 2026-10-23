@@ -3,17 +3,23 @@ import React from 'react';
 export interface DropletLogoProps {
   layout?: 'horizontal' | 'vertical' | 'icon-only';
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  height?: number;
+  width?: number;
   showTagline?: boolean;
   className?: string;
   priority?: boolean;
+  style?: React.CSSProperties;
 }
 
 export const DropletLogo: React.FC<DropletLogoProps> = ({
   layout = 'horizontal',
   size = 'md',
+  height: customHeight,
+  width: customWidth,
   showTagline = false,
   className = '',
   priority = false,
+  style,
 }) => {
   // Dimensions for 3:1 ratio horizontal brand artwork
   const horizontalDimensions = {
@@ -65,7 +71,8 @@ export const DropletLogo: React.FC<DropletLogoProps> = ({
     );
   }
 
-  const { width, height } = horizontalDimensions[size];
+  const height = customHeight || horizontalDimensions[size].height;
+  const width = customWidth || (customHeight ? Math.round(customHeight * 3) : horizontalDimensions[size].width);
 
   return (
     <div
@@ -76,6 +83,7 @@ export const DropletLogo: React.FC<DropletLogoProps> = ({
         alignItems: 'center',
         gap: '8px',
         userSelect: 'none',
+        ...style,
       }}
     >
       <picture>

@@ -4,11 +4,13 @@ import { app, server } from '../server/src/index';
 import { WebSocket } from 'ws';
 import { AddressInfo } from 'net';
 import { DROPLET_LIMITS } from '../shared/limits';
+import { resetRateLimitStores } from '../server/src/middleware/rateLimit';
 
 describe('Step 5: Text, Links & Real-Time Sync', () => {
   let wsServerPort: number;
 
   beforeEach(() => {
+    resetRateLimitStores();
     if (!server.listening) {
       server.listen(0);
     }

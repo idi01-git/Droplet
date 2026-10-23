@@ -171,7 +171,7 @@ export class RoomService {
                 filename, size_bytes as sizeBytes, mime_type as mimeType, created_at as createdAt
          FROM items 
          WHERE room_id = ? 
-         ORDER BY created_at ASC`
+         ORDER BY created_at DESC`
       )
       .all(roomId) as Item[];
 

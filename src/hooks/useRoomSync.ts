@@ -72,7 +72,8 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
             setItems((prev) => {
               // Avoid duplicates
               if (prev.some((i) => i.id === roomEvent.payload.item!.id)) return prev;
-              return [...prev, roomEvent.payload.item!];
+              // Prepend newest item so it appears at top
+              return [roomEvent.payload.item!, ...prev];
             });
           } else if (roomEvent.type === 'ITEM_DELETED' && roomEvent.payload.itemId) {
             setItems((prev) => prev.filter((i) => i.id !== roomEvent.payload.itemId));

@@ -2,6 +2,7 @@ import { getDatabase } from '../db/database';
 import { storageService } from './storageService';
 import { realtimeService } from './realtimeService';
 import { UploadService } from './uploadService';
+import { unregisterCreatedRoom } from '../middleware/rateLimit';
 
 export class CleanupService {
   private static timer: NodeJS.Timeout | null = null;
@@ -65,6 +66,7 @@ export class CleanupService {
 
       // Purge database row (foreign keys cascade delete items, sessions, upload_reservations)
       db.prepare(`DELETE FROM rooms WHERE id = ?`).run(room.id);
+      unregisterCreatedRoom(room.id);
       roomsPurged++;
     }
 

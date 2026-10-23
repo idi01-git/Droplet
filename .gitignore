@@ -37,4 +37,7 @@ Thumbs.db
 .agent/
 .agents/
 .claude/
+.taste-skill/
+.impeccable/
 skills-lock.json
+

@@ -1,7 +1,7 @@
 import React from 'react';
 import { DropletMascot } from '../components/brand';
 import { Button, Card } from '../components/ui';
-import { Sparkles, Home } from 'lucide-react';
+import { SparklesIcon, HomeIcon } from '../components/icons';
 
 export interface ExpiredViewProps {
   onGoHome: () => void;
@@ -55,7 +55,7 @@ export const ExpiredView: React.FC<ExpiredViewProps> = ({
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <Button
             variant="primary"
-            leftIcon={<Sparkles size={16} strokeWidth={2.5} />}
+            leftIcon={<SparklesIcon size={16} />}
             onClick={onGoHome}
           >
             Create New Room
@@ -63,7 +63,7 @@ export const ExpiredView: React.FC<ExpiredViewProps> = ({
 
           <Button
             variant="surface"
-            leftIcon={<Home size={16} strokeWidth={2.5} />}
+            leftIcon={<HomeIcon size={16} />}
             onClick={onGoHome}
           >
             Return Home

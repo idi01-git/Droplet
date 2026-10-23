@@ -1,5 +1,5 @@
 import React from 'react';
-import { UploadCloud } from 'lucide-react';
+import { UploadIcon } from '../icons';
 import DropletMascot from '../brand/DropletMascot';
 
 export interface EmptyStateProps {
@@ -8,6 +8,8 @@ export interface EmptyStateProps {
   actionText?: string;
   onAction?: () => void;
   showMascot?: boolean;
+  mascotVariant?: 'head' | 'full';
+  mascotSize?: number;
   isDragOver?: boolean;
 }
 
@@ -17,6 +19,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionText = 'Select Files',
   onAction,
   showMascot = true,
+  mascotVariant = 'head',
+  mascotSize = 76,
   isDragOver = false,
 }) => {
   return (
@@ -39,7 +43,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       onClick={onAction}
     >
       {showMascot ? (
-        <DropletMascot size={72} mood={isDragOver ? 'excited' : 'happy'} />
+        <DropletMascot size={mascotSize} variant={mascotVariant} mood={isDragOver ? 'excited' : 'happy'} />
       ) : (
         <div
           style={{
@@ -54,7 +58,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             boxShadow: 'var(--shadow-small)',
           }}
         >
-          <UploadCloud size={28} strokeWidth={2.5} color="var(--color-ink)" />
+          <UploadIcon size={28} />
         </div>
       )}
 

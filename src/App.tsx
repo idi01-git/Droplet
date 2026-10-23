@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { Navbar, Card, Button } from './components/ui';
 import { HomeView } from './views/HomeView';
 import { RoomView } from './views/RoomView';
 import { ExpiredView } from './views/ExpiredView';
 import { RoomSummary } from '../shared/types';
+import { api } from './services/api';
+import { recentRoomsService, MAX_ACTIVE_CREATED_ROOMS } from './services/recentRooms';
 
 const STORAGE_KEY_ROOM = 'droplet_active_room';
 const STORAGE_KEY_TOKEN = 'droplet_session_token';
@@ -54,6 +57,7 @@ export const App: React.FC = () => {
     try {
       localStorage.setItem(STORAGE_KEY_ROOM, JSON.stringify(room));
       localStorage.setItem(STORAGE_KEY_TOKEN, token);
+      recentRoomsService.addRecentRoom(room, token);
     } catch {
       // Storage access blocked or quota exceeded
     }
@@ -70,12 +74,38 @@ export const App: React.FC = () => {
   };
 
   const handleRoomExpired = (reason?: string) => {
+    if (currentRoom) {
+      recentRoomsService.removeRecentRoom(currentRoom.code);
+    }
     setExpiredReason(reason || 'This room has reached its 24-hour expiration or was deleted.');
     setCurrentRoom(null);
     setSessionToken(null);
 
     localStorage.removeItem(STORAGE_KEY_ROOM);
     localStorage.removeItem(STORAGE_KEY_TOKEN);
+  };
+
+  const handleQuickCreate = async () => {
+    const activeCreated = recentRoomsService.getCreatedRooms();
+    if (activeCreated.length >= MAX_ACTIVE_CREATED_ROOMS) {
+      alert(
+        `Active room limit reached (${MAX_ACTIVE_CREATED_ROOMS} rooms max). Please close an existing room or wait for it to expire before creating a new one.`
+      );
+      return;
+    }
+
+    try {
+      const result = await api.createRoom();
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#FFE000', '#000000', '#00D084', '#3B82F6'],
+      });
+      handleRoomJoined(result.room, result.sessionToken);
+    } catch (err: any) {
+      alert(err.message || 'Failed to create room. Please try again.');
+    }
   };
 
   return (
@@ -87,10 +117,18 @@ export const App: React.FC = () => {
           if (tab === 'room' && !currentRoom) return;
           setActiveTab(tab);
         }}
+        onCreateRoom={handleQuickCreate}
+        onJoinRoom={() => {
+          if (activeTab !== 'home') setActiveTab('home');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('droplet:open-join-room'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 50);
+        }}
         roomCode={currentRoom ? currentRoom.code : null}
       />
 
-      <main>
+      <main style={{ paddingTop: activeTab === 'home' ? 0 : '98px' }}>
         {expiredReason ? (
           <ExpiredView
             reason={expiredReason}

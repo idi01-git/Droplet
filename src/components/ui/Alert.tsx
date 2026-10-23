@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircleIcon, CrossCircleIcon, ShieldIcon, InfoIcon, CloseIcon } from '../icons';
 
 export interface AlertProps {
   variant?: 'success' | 'error' | 'warning' | 'info';
@@ -19,22 +19,22 @@ export const Alert: React.FC<AlertProps> = ({
   const variantConfig = {
     success: {
       bg: 'var(--color-success)',
-      icon: <CheckCircle2 size={20} strokeWidth={3} color="#000000" />,
+      icon: <CheckCircleIcon size={22} />,
       text: '#000000',
     },
     error: {
       bg: 'var(--color-error)',
-      icon: <AlertCircle size={20} strokeWidth={3} color="#000000" />,
+      icon: <CrossCircleIcon size={22} />,
       text: '#000000',
     },
     warning: {
       bg: '#F59E0B',
-      icon: <AlertTriangle size={20} strokeWidth={3} color="#000000" />,
+      icon: <ShieldIcon size={22} />,
       text: '#000000',
     },
     info: {
       bg: 'var(--color-info)',
-      icon: <Info size={20} strokeWidth={3} color="#FFFFFF" />,
+      icon: <InfoIcon size={22} />,
       text: '#FFFFFF',
     },
   };
@@ -87,7 +87,7 @@ export const Alert: React.FC<AlertProps> = ({
             flexShrink: 0,
           }}
         >
-          <X size={18} strokeWidth={3} />
+          <CloseIcon size={18} />
         </button>
       )}
     </div>

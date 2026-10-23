@@ -15,10 +15,11 @@ interface FailedJoinRecord {
 
 // In-memory rate limiting stores (sliding window / fixed window)
 const ipCreationStore = new Map<string, RateLimitRecord>();
+const ipActiveRoomsStore = new Map<string, Set<string>>();
 const failedJoinStore = new Map<string, FailedJoinRecord>();
 const sessionItemStore = new Map<string, RateLimitRecord>();
 
-function getClientIp(req: Request): string {
+export function getClientIp(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') {
     return forwarded.split(',')[0].trim();
@@ -27,14 +28,54 @@ function getClientIp(req: Request): string {
 }
 
 /**
+ * Register an active room for an IP in memory (Layer 2 defense)
+ */
+export function registerCreatedRoomForIp(ip: string, roomId: string): void {
+  let set = ipActiveRoomsStore.get(ip);
+  if (!set) {
+    set = new Set();
+    ipActiveRoomsStore.set(ip, set);
+  }
+  set.add(roomId);
+}
+
+/**
+ * Unregister a room from all active IP sets (on deletion or expiration)
+ */
+export function unregisterCreatedRoom(roomId: string): void {
+  for (const set of ipActiveRoomsStore.values()) {
+    if (set.has(roomId)) {
+      set.delete(roomId);
+    }
+  }
+}
+
+/**
  * Middleware: Rate limit room creation per IP.
- * Default: 5 requests per 10 minutes.
+ * Layer 2 Defense:
+ * 1. Concurrency limit: Max 3 active unexpired rooms created per IP
+ * 2. Velocity limit: Max 5 creation attempts per 10 minutes per IP
  */
 export function rateLimitRoomCreation(req: Request, res: Response, next: NextFunction): void {
   const ip = getClientIp(req);
   const now = Date.now();
   const limitConfig = DROPLET_LIMITS.RATE_LIMITS.ROOM_CREATION;
 
+  // 1. Check in-memory active rooms created by this IP
+  const activeRooms = ipActiveRoomsStore.get(ip);
+  if (activeRooms && activeRooms.size >= DROPLET_LIMITS.MAX_ACTIVE_ROOMS_PER_CREATOR) {
+    const errorResponse: ApiErrorResponse = {
+      success: false,
+      error: {
+        code: 'ACTIVE_ROOM_LIMIT_REACHED',
+        message: `Active room limit reached (${DROPLET_LIMITS.MAX_ACTIVE_ROOMS_PER_CREATOR} rooms max). Please close an existing room or wait for it to expire.`,
+      },
+    };
+    res.status(429).json(errorResponse);
+    return;
+  }
+
+  // 2. Velocity sliding window limit
   let record = ipCreationStore.get(ip);
   if (!record || now > record.resetAt) {
     record = { count: 1, resetAt: now + limitConfig.WINDOW_MS };
@@ -122,6 +163,7 @@ export function clearFailedJoinAttempts(ip: string): void {
  */
 export function resetRateLimitStores(): void {
   ipCreationStore.clear();
+  ipActiveRoomsStore.clear();
   failedJoinStore.clear();
   sessionItemStore.clear();
 }

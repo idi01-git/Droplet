@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Image, FileArchive, FileCode, File, Download, Trash2 } from 'lucide-react';
+import { FileIcon, ImageIcon, ArchiveIcon, CodeIcon, DownloadIcon, TrashIcon } from '../icons';
 import Badge from './Badge';
 
 export interface FileItemRowProps {
@@ -34,18 +34,18 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
   const getFileIcon = () => {
     const lower = filename.toLowerCase();
     if (mimeType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/.test(lower)) {
-      return <Image size={22} strokeWidth={2.5} color="var(--color-ink)" />;
+      return <ImageIcon size={24} />;
     }
     if (lower.endsWith('.pdf') || mimeType.includes('pdf')) {
-      return <FileText size={22} strokeWidth={2.5} color="var(--color-ink)" />;
+      return <FileIcon size={24} />;
     }
     if (/\.(zip|tar|gz|7z|rar)$/.test(lower)) {
-      return <FileArchive size={22} strokeWidth={2.5} color="var(--color-ink)" />;
+      return <ArchiveIcon size={24} />;
     }
     if (/\.(js|ts|tsx|jsx|py|java|cpp|c|html|css|json|md)$/.test(lower)) {
-      return <FileCode size={22} strokeWidth={2.5} color="var(--color-ink)" />;
+      return <CodeIcon size={24} />;
     }
-    return <File size={22} strokeWidth={2.5} color="var(--color-ink)" />;
+    return <FileIcon size={24} />;
   };
 
   return (
@@ -131,7 +131,7 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
             cursor: 'pointer',
           }}
         >
-          <Download size={15} strokeWidth={3} />
+          <DownloadIcon size={16} />
           <span>GET</span>
         </button>
 
@@ -153,7 +153,7 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
               cursor: 'pointer',
             }}
           >
-            <Trash2 size={15} strokeWidth={2.5} />
+            <TrashIcon size={16} />
           </button>
         )}
       </div>

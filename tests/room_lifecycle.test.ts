@@ -116,4 +116,28 @@ describe('Step 4: Room Lifecycle End-to-End API (Create, Join, Expiry, Delete)',
     expect(res.status).toBe(410);
     expect(res.body.error.code).toBe('ROOM_EXPIRED');
   });
+
+  it('Enforces Layer 2 Defense: Rejects creation when creator reaches active room limit', async () => {
+    // Create 3 active rooms (the maximum allowed)
+    const res1 = await request(app).post('/api/rooms');
+    const res2 = await request(app).post('/api/rooms');
+    const res3 = await request(app).post('/api/rooms');
+    expect(res1.status).toBe(201);
+    expect(res2.status).toBe(201);
+    expect(res3.status).toBe(201);
+
+    // 4th room creation rejected with 429 ACTIVE_ROOM_LIMIT_REACHED
+    const res4 = await request(app).post('/api/rooms');
+    expect(res4.status).toBe(429);
+    expect(res4.body.error.code).toBe('ACTIVE_ROOM_LIMIT_REACHED');
+
+    // After deleting one room, creation succeeds again
+    const deleteRes = await request(app)
+      .delete(`/api/rooms/${res1.body.data.room.id}`)
+      .set('Authorization', `Bearer ${res1.body.data.sessionToken}`);
+    expect(deleteRes.status).toBe(200);
+
+    const res5 = await request(app).post('/api/rooms');
+    expect(res5.status).toBe(201);
+  });
 });

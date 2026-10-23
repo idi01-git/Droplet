@@ -7,6 +7,8 @@ import {
   checkFailedJoinLockout,
   recordFailedJoinAttempt,
   clearFailedJoinAttempts,
+  registerCreatedRoomForIp,
+  unregisterCreatedRoom,
 } from '../middleware/rateLimit';
 import { ApiResponse, CreateRoomResponse, JoinRoomResponse, RoomDetailsResponse } from '../../../shared/types';
 import { AppError } from '../middleware/errorHandler';
@@ -31,6 +33,7 @@ router.post(
     try {
       const ip = getClientIp(req);
       const result = RoomService.createRoom(ip);
+      registerCreatedRoomForIp(ip, result.room.id);
 
       res.status(201).json({
         success: true,
@@ -126,6 +129,7 @@ router.delete(
       }
 
       RoomService.deleteRoom(roomId);
+      unregisterCreatedRoom(roomId);
 
       res.status(200).json({
         success: true,
