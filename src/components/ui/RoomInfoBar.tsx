@@ -124,7 +124,7 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
           }}
         >
           <span className="nb-room-badge-tag">ROOM</span>
-          <span className="nb-room-badge-code">{roomCode}</span>
+          <span className="nb-room-badge-code">{roomCode && roomCode.trim() !== '' ? roomCode : '••••'}</span>
 
           {/* Realtime Live Dot Indicator */}
           <span

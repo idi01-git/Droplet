@@ -33,6 +33,12 @@ export const RoomView: React.FC<RoomViewProps> = ({
   onExpired,
   onDeleted,
 }) => {
+  // Ensure room code is always available even if backend returned empty code
+  const effectiveRoomCode =
+    room.code && /^\d{4}$/.test(room.code.trim())
+      ? room.code
+      : recentRoomsService.getRecentRooms().find((r) => r.id === room.id)?.code || room.code || '';
+
   const { items, isConnected, postTextItem, deleteItem, error: syncError } = useRoomSync({
     roomId: room.id,
     sessionToken,
@@ -339,7 +345,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
       {/* Unified Master Control Deck (Leave, Wifi Status Logo, Code Badge, Share Button, Expiry, Delete) */}
       <div style={{ marginBottom: '24px' }}>
         <RoomInfoBar
-          roomCode={room.code}
+          roomCode={effectiveRoomCode}
           expiresAt={room.expiresAt}
           isConnected={isConnected}
           onLeave={onLeave}
@@ -556,7 +562,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
 
       {/* QR Code Modal */}
       <QrCodeModal
-        roomCode={room.code}
+        roomCode={effectiveRoomCode}
         isOpen={showQrModal}
         onClose={() => setShowQrModal(false)}
       />

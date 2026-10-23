@@ -65,6 +65,7 @@ describe('Step 4: Room Lifecycle End-to-End API (Create, Join, Expiry, Delete)',
     expect(authRes.status).toBe(200);
     expect(authRes.body.success).toBe(true);
     expect(authRes.body.data.room.id).toBe(room.id);
+    expect(authRes.body.data.room.code).toBe(room.code);
     expect(authRes.body.data.room.isOwner).toBe(true);
     expect(Array.isArray(authRes.body.data.items)).toBe(true);
   });

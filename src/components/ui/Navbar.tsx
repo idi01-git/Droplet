@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DropletLogo from '../brand/DropletLogo';
-import { ArrowRightIcon, QrCodeIcon, ShareIcon } from '../icons';
+import { ArrowRightIcon, QrCodeIcon } from '../icons';
 
 export interface NavbarProps {
   activeTab?: 'home' | 'room' | 'info';
@@ -174,31 +174,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             );
           })}
-
-          {roomCode && activeTab !== 'room' && (
-            <button
-              onClick={() => onSelectTab && onSelectTab('room')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                borderRadius: '10px',
-                border: '2px dashed #000000',
-                backgroundColor: '#FFFFFF',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                fontSize: '13.5px',
-                color: '#000000',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-              title="Return to active room"
-            >
-              <ShareIcon size={14} />
-              <span>Resume Room {roomCode}</span>
-            </button>
-          )}
         </nav>
 
         {/* Right Actions: Join Room & Create a Room (Hidden when inside an active room session) */}

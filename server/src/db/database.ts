@@ -48,6 +48,17 @@ export function initDatabase(options: DatabaseOptions = {}): DatabaseType {
     throw new Error(`Schema file not found at ${schemaPath}`);
   }
 
+  // Automatic migration: ensure code column exists on rooms table for existing databases
+  try {
+    const tableInfo = db.pragma('table_info(rooms)') as { name: string }[];
+    const hasCodeColumn = tableInfo.some((col) => col.name === 'code');
+    if (!hasCodeColumn) {
+      db.exec('ALTER TABLE rooms ADD COLUMN code TEXT');
+    }
+  } catch {
+    // Migration check safely ignored if table does not yet exist
+  }
+
   dbInstance = db;
   return db;
 }

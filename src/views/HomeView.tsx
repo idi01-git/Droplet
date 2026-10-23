@@ -93,7 +93,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
     if (roomItem.token) {
       try {
         const details = await api.getRoom(roomItem.id, roomItem.token);
-        onRoomJoined(details.room, roomItem.token);
+        const resolvedCode = details.room.code || roomItem.code;
+        onRoomJoined({ ...details.room, code: resolvedCode }, roomItem.token);
         return;
       } catch {
         recentRoomsService.removeRecentRoom(roomItem.code);

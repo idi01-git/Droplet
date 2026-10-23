@@ -38,6 +38,13 @@ export const App: React.FC = () => {
         try {
           const parsed = JSON.parse(savedRoom) as RoomSummary;
           if (Date.now() < parsed.expiresAt) {
+            // Recover room code from recent rooms cache if missing
+            if (!parsed.code || !/^\d{4}$/.test(parsed.code.trim())) {
+              const recent = recentRoomsService.getRecentRooms().find((r) => r.id === parsed.id);
+              if (recent && recent.code) {
+                parsed.code = recent.code;
+              }
+            }
             setCurrentRoom(parsed);
             setSessionToken(savedToken);
             setActiveTab('room');
@@ -53,6 +60,15 @@ export const App: React.FC = () => {
   }, []);
 
   const handleRoomJoined = (room: RoomSummary, token: string) => {
+    // Recover room code from recent rooms or currentRoom if missing
+    if (!room.code || !/^\d{4}$/.test(room.code.trim())) {
+      const recent = recentRoomsService.getRecentRooms().find((r) => r.id === room.id);
+      if (recent && recent.code) {
+        room.code = recent.code;
+      } else if (currentRoom && currentRoom.id === room.id && currentRoom.code) {
+        room.code = currentRoom.code;
+      }
+    }
     setCurrentRoom(room);
     setSessionToken(token);
     setExpiredReason(null);
@@ -149,7 +165,7 @@ export const App: React.FC = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }, 50);
         }}
-        roomCode={currentRoom ? currentRoom.code : null}
+        roomCode={activeTab === 'room' && currentRoom ? currentRoom.code : null}
       />
 
       <main style={{ paddingTop: activeTab === 'home' ? 0 : '98px' }}>

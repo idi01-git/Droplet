@@ -6,6 +6,7 @@ PRAGMA foreign_keys = ON;
 -- 1. Rooms Table
 CREATE TABLE IF NOT EXISTS rooms (
     id TEXT PRIMARY KEY,
+    code TEXT,
     code_hash TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,

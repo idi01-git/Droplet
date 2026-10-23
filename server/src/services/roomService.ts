@@ -56,10 +56,10 @@ export class RoomService {
       // Insert room
       db.prepare(
         `INSERT INTO rooms (
-          id, code_hash, created_at, expires_at, status, 
+          id, code, code_hash, created_at, expires_at, status, 
           owner_session_hash, used_bytes, reserved_bytes, file_count, last_activity_at
-        ) VALUES (?, ?, ?, ?, 'active', ?, 0, 0, 0, ?)`
-      ).run(roomId, codeHash, now, expiresAt, sessionTokenHash, now);
+        ) VALUES (?, ?, ?, ?, ?, 'active', ?, 0, 0, 0, ?)`
+      ).run(roomId, code, codeHash, now, expiresAt, sessionTokenHash, now);
 
       // Insert owner session
       db.prepare(
@@ -102,15 +102,20 @@ export class RoomService {
     // Look for active room with this code
     const roomRow = db
       .prepare(
-        `SELECT id, created_at as createdAt, expires_at as expiresAt, status,
+        `SELECT id, code, created_at as createdAt, expires_at as expiresAt, status,
                 used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
          FROM rooms 
          WHERE code_hash = ? AND status = 'active' AND expires_at > ?`
       )
-      .get(codeHash, now) as Room | undefined;
+      .get(codeHash, now) as (Room & { code?: string }) | undefined;
 
     if (!roomRow) {
       throw new AppError('ROOM_NOT_FOUND', 'No active room found with this code. It may have expired.', 404);
+    }
+
+    // Ensure code is persisted if room row didn't have it
+    if (!roomRow.code) {
+      db.prepare(`UPDATE rooms SET code = ? WHERE id = ?`).run(code, roomRow.id);
     }
 
     // Generate participant session
@@ -149,12 +154,12 @@ export class RoomService {
 
     const roomRow = db
       .prepare(
-        `SELECT id, created_at as createdAt, expires_at as expiresAt, status,
+        `SELECT id, code, created_at as createdAt, expires_at as expiresAt, status,
                 used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
          FROM rooms 
          WHERE id = ?`
       )
-      .get(roomId) as Room | undefined;
+      .get(roomId) as (Room & { code?: string }) | undefined;
 
     if (!roomRow || roomRow.status === 'deleted') {
       throw new AppError('ROOM_NOT_FOUND', 'Room not found or has been deleted.', 404);
@@ -177,7 +182,7 @@ export class RoomService {
 
     const roomSummary: RoomSummary = {
       id: roomRow.id,
-      code: '', // Populated by caller if known
+      code: roomRow.code || '',
       createdAt: roomRow.createdAt,
       expiresAt: roomRow.expiresAt,
       status: roomRow.status,
