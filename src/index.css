@@ -943,8 +943,8 @@ input, textarea {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 110px);
-  padding: 12px 20px 40px;
+  min-height: calc(100vh - 120px);
+  padding: 8px 20px 36px;
   box-sizing: border-box;
   text-align: center;
   background-color: transparent;
@@ -954,16 +954,15 @@ input, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: 70vh;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .nb-notfound-mascot-hero {
-  height: 68vh;
-  max-height: 540px;
-  min-height: 240px;
+  height: 58vh;
+  max-height: 460px;
+  min-height: 200px;
   width: auto;
-  max-width: 90vw;
+  max-width: 88vw;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   filter: drop-shadow(4px 6px 0px rgba(0, 0, 0, 0.08));
@@ -977,10 +976,10 @@ input, textarea {
 
 .nb-notfound-single-line {
   font-family: var(--font-display);
-  font-size: clamp(15px, 2.8vw, 19px);
+  font-size: clamp(15px, 2.4vw, 18px);
   font-weight: 800;
   color: #000000;
-  margin: 0 0 20px 0;
+  margin: 0 0 16px 0;
   line-height: 1.35;
   text-align: center;
   max-width: 90vw;
@@ -996,14 +995,14 @@ input, textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 9px;
   padding: 12px 28px;
   background-color: #FFE000;
   border: 2.5px solid #000000;
   border-radius: 14px;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 16px;
+  font-size: 15.5px;
   color: #000000;
   cursor: pointer;
   box-shadow: 3.5px 3.5px 0px #000000;
@@ -1025,27 +1024,26 @@ input, textarea {
 @media (max-width: 600px) {
   .nb-notfound-page {
     min-height: calc(100vh - 84px);
-    padding: 6px 16px 28px;
+    padding: 6px 16px 24px;
   }
 
   .nb-notfound-hero {
-    max-height: 62vh;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .nb-notfound-mascot-hero {
-    height: 60vh;
-    max-height: 380px;
+    height: 50vh;
+    max-height: 330px;
   }
 
   .nb-notfound-single-line {
-    font-size: 14.5px;
-    margin-bottom: 16px;
+    font-size: 14px;
+    margin-bottom: 14px;
   }
 
   .nb-notfound-home-btn {
     padding: 11px 24px;
-    font-size: 15px;
+    font-size: 14.5px;
   }
 }
 
