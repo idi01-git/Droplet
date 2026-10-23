@@ -146,15 +146,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   const handleConnectClick = () => {
-    if (code.length < 4) {
+    const targetCode = code.trim();
+    if (targetCode.length < 4) {
       setModalError('Please enter all 4 digits of the room code.');
       return;
     }
-    handleJoinRoom();
+    handleJoinRoom(targetCode);
   };
 
-  const handleJoinRoom = async () => {
-    if (code.length !== 4) {
+  const handleJoinRoom = async (codeToJoin?: string) => {
+    const targetCode = (typeof codeToJoin === 'string' ? codeToJoin : code).trim();
+    if (targetCode.length !== 4) {
       setModalError('Please enter all 4 digits of the room code.');
       return;
     }
@@ -163,7 +165,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setModalError(null);
 
     try {
-      const result = await api.joinRoom(code);
+      const result = await api.joinRoom(targetCode);
       onRoomJoined(result.room, result.sessionToken);
     } catch (err: any) {
       setModalError(err.message || 'Room not found or has expired.');
@@ -384,7 +386,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
                 {/* Secondary CTA: Join a Room */}
                 <button
-                  onClick={() => setShowJoinModal(true)}
+                  onClick={() => {
+                    setModalError(null);
+                    setShowJoinModal(true);
+                  }}
                   className="nb-button"
                   style={{
                     display: 'inline-flex',
@@ -1584,7 +1589,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       <button
                         key={r.code}
                         type="button"
-                        onClick={() => handleCodeChange(r.code)}
+                        onClick={() => {
+                          handleCodeChange(r.code);
+                          handleJoinRoom(r.code);
+                        }}
                         style={{
                           padding: '2px 8px',
                           fontSize: '12px',
