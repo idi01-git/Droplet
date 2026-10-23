@@ -933,7 +933,175 @@ input, textarea {
     justify-content: center !important;
     gap: 0 !important;
   }
+/* =========================================================================
+   Custom 404 Page (NotFoundView) - Neo-Brutalist Responsive Styles
+   ========================================================================= */
+.nb-notfound-container {
+  max-width: 620px;
+  margin: 28px auto 60px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
+.nb-notfound-card {
+  background-color: #FFFFFF;
+  border: 2.5px solid #000000;
+  border-radius: 20px;
+  box-shadow: 6px 6px 0px #000000;
+  padding: 36px 32px 30px;
+  text-align: center;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
+.nb-notfound-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: #FFF8B8;
+  border: 2px solid #000000;
+  border-radius: 9999px;
+  padding: 5px 14px;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #000000;
+  box-shadow: 2px 2px 0px #000000;
+  margin-bottom: 16px;
+}
 
+.nb-notfound-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #E53E3E;
+  display: inline-block;
+}
+
+.nb-notfound-mascot-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 6px 0 16px;
+}
+
+.nb-notfound-mascot-img {
+  width: clamp(180px, 46vw, 240px);
+  height: auto;
+  max-height: 240px;
+  object-fit: contain;
+  filter: drop-shadow(2px 3px 0px rgba(0, 0, 0, 0.12));
+  user-select: none;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nb-notfound-mascot-img:hover {
+  transform: scale(1.04) rotate(-1.5deg);
+}
+
+.nb-notfound-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 5.5vw, 28px);
+  font-weight: 900;
+  color: #000000;
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+
+.nb-notfound-desc {
+  font-family: var(--font-body);
+  font-size: clamp(13.5px, 3.2vw, 15px);
+  color: #4B5563;
+  line-height: 1.55;
+  margin: 0 auto 24px;
+  max-width: 480px;
+}
+
+.nb-notfound-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.nb-notfound-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: #000000;
+  cursor: pointer;
+  box-shadow: 2.5px 2.5px 0px #000000;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.nb-notfound-btn:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.nb-notfound-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1.5px 1.5px 0px #000000;
+}
+
+.nb-notfound-btn-primary {
+  background-color: #FFE000;
+}
+
+.nb-notfound-btn-secondary {
+  background-color: #FFFFFF;
+}
+
+.nb-notfound-btn-accent {
+  background-color: #E6F9F0;
+}
+
+.nb-notfound-hint {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1.5px dashed rgba(0, 0, 0, 0.18);
+  font-size: 12.5px;
+  color: #6B7280;
+  font-family: var(--font-body);
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .nb-notfound-container {
+    margin: 12px auto 36px;
+    padding: 0 14px;
+  }
+
+  .nb-notfound-card {
+    padding: 24px 18px 20px;
+    border-radius: 16px;
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  .nb-notfound-actions {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .nb-notfound-btn {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 14px;
+  }
+}

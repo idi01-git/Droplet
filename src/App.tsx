@@ -4,6 +4,7 @@ import { Navbar, Card, Button } from './components/ui';
 import { HomeView } from './views/HomeView';
 import { RoomView } from './views/RoomView';
 import { ExpiredView } from './views/ExpiredView';
+import { NotFoundView } from './views/NotFoundView';
 import { RoomSummary } from '../shared/types';
 import { api } from './services/api';
 import { recentRoomsService, MAX_ACTIVE_CREATED_ROOMS } from './services/recentRooms';
@@ -12,7 +13,7 @@ const STORAGE_KEY_ROOM = 'droplet_active_room';
 const STORAGE_KEY_TOKEN = 'droplet_session_token';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'home' | 'room' | 'info'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'room' | 'info' | '404'>('home');
   const [currentRoom, setCurrentRoom] = useState<RoomSummary | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [expiredReason, setExpiredReason] = useState<string | null>(null);
@@ -22,14 +23,30 @@ export const App: React.FC = () => {
     message: string;
   } | null>(null);
 
-  // Check URL query parameter on load (e.g., ?join=4827 from QR code)
+  // Check URL query parameter and pathname on load
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname !== '/' && pathname !== '' && pathname !== '/index.html') {
+        setActiveTab('404');
+      }
+
       const params = new URLSearchParams(window.location.search);
       const joinParam = params.get('join');
       if (joinParam && /^\d{4}$/.test(joinParam)) {
         setInitialJoinCode(joinParam);
       }
+
+      // Handle popstate (browser back/forward button)
+      const handlePopState = () => {
+        const path = window.location.pathname;
+        if (path !== '/' && path !== '' && path !== '/index.html') {
+          setActiveTab('404');
+        } else if (!currentRoom) {
+          setActiveTab('home');
+        }
+      };
+      window.addEventListener('popstate', handlePopState);
 
       // Check localStorage for persisted session
       const savedRoom = localStorage.getItem(STORAGE_KEY_ROOM);
@@ -84,11 +101,24 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleGoHome = () => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/' && window.location.pathname !== '') {
+      window.history.pushState({}, '', '/');
+    }
+    setExpiredReason(null);
+    setHomeNotice(null);
+    setActiveTab('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleLeaveRoom = () => {
     setCurrentRoom(null);
     setSessionToken(null);
     setExpiredReason(null);
     setHomeNotice(null);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/' && window.location.pathname !== '') {
+      window.history.pushState({}, '', '/');
+    }
     setActiveTab('home');
 
     localStorage.removeItem(STORAGE_KEY_ROOM);
@@ -155,11 +185,15 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onSelectTab={(tab) => {
           if (tab === 'room' && !currentRoom) return;
-          setActiveTab(tab);
+          if (tab === 'home') {
+            handleGoHome();
+          } else {
+            setActiveTab(tab);
+          }
         }}
         onCreateRoom={handleQuickCreate}
         onJoinRoom={() => {
-          if (activeTab !== 'home') setActiveTab('home');
+          if (activeTab !== 'home') handleGoHome();
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('droplet:open-join-room'));
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -169,13 +203,22 @@ export const App: React.FC = () => {
       />
 
       <main className={activeTab === 'home' ? undefined : 'nb-main-content'}>
-        {expiredReason ? (
+        {activeTab === '404' ? (
+          <NotFoundView
+            onGoHome={handleGoHome}
+            onJoinRoom={() => {
+              handleGoHome();
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('droplet:open-join-room'));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 60);
+            }}
+            onCreateRoom={handleQuickCreate}
+          />
+        ) : expiredReason ? (
           <ExpiredView
             reason={expiredReason}
-            onGoHome={() => {
-              setExpiredReason(null);
-              setActiveTab('home');
-            }}
+            onGoHome={handleGoHome}
           />
         ) : activeTab === 'room' && currentRoom && sessionToken ? (
           <RoomView
