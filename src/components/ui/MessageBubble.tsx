@@ -25,8 +25,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Consider text large if it exceeds 260 chars or has more than 5 lines
-  const isLargeText = !isLink && (text.length > 260 || text.split('\n').length > 5);
+  // Consider text large if it exceeds 150 chars or has more than 3 lines
+  const isLargeText = !isLink && (text.length > 150 || text.split('\n').length > 3);
 
   const formattedTime = timestamp
     ? typeof timestamp === 'number'
@@ -160,7 +160,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         </div>
 
-        {/* Content with Collapse / Expand Support for Long Text */}
+        {/* Content with 3-Line Clamp & Neo-Brutalist Arrowhead Toggle */}
         <div style={{ position: 'relative' }}>
           <div
             style={{
@@ -170,9 +170,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               fontWeight: 500,
-              maxHeight: isLargeText && !isExpanded ? '135px' : 'none',
-              overflow: isLargeText && !isExpanded ? 'hidden' : 'visible',
-              transition: 'max-height 0.2s ease',
+              ...(isLargeText && !isExpanded
+                ? {
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }
+                : {}),
             }}
           >
             {isLink ? (
@@ -198,62 +203,62 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
           </div>
 
-          {/* Fade overlay when collapsed */}
-          {isLargeText && !isExpanded && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '48px',
-                background: `linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, ${bgColors[variant]} 100%)`,
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-
-          {/* Show full text / Collapse toggle button */}
+          {/* Neo-brutalist Arrowhead expand/collapse toggle */}
           {isLargeText && (
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              style={{
-                marginTop: '10px',
-                background: '#FFFFFF',
-                border: '2px solid var(--color-ink, #000000)',
-                borderRadius: '8px',
-                boxShadow: '1.5px 1.5px 0px var(--color-ink, #000000)',
-                padding: '4px 10px',
-                fontSize: '12px',
-                fontWeight: 800,
-                fontFamily: 'var(--font-display)',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                color: '#000000',
-                transition: 'all 0.1s ease',
-              }}
-            >
-              <span>{isExpanded ? 'Collapse text' : 'Show full text'}</span>
-              <svg
-                width={12}
-                height={12}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                title={isExpanded ? 'Collapse note to 3 lines' : 'Expand full note'}
                 style={{
-                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.15s ease',
+                  background: isExpanded ? 'var(--color-ink)' : '#FFFFFF',
+                  color: isExpanded ? '#FFFFFF' : 'var(--color-ink)',
+                  border: '2px solid var(--color-ink)',
+                  borderRadius: '6px',
+                  boxShadow: isExpanded ? '1px 1px 0px var(--color-ink)' : '2.5px 2.5px 0px var(--color-ink)',
+                  padding: '5px 12px',
+                  fontSize: '11px',
+                  fontWeight: 900,
+                  fontFamily: 'var(--font-display)',
+                  letterSpacing: '0.6px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  textTransform: 'uppercase',
+                  transform: isExpanded ? 'translate(1.5px, 1.5px)' : 'none',
+                  transition: 'all 0.1s ease',
                 }}
               >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+                <span>{isExpanded ? 'COLLAPSE' : 'SHOW MORE'}</span>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '18px',
+                    height: '18px',
+                    backgroundColor: isExpanded ? '#FFFFFF' : 'var(--color-primary)',
+                    color: 'var(--color-ink)',
+                    border: '1.5px solid var(--color-ink)',
+                    borderRadius: '4px',
+                    boxShadow: '1px 1px 0px var(--color-ink)',
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                >
+                  <svg
+                    width={10}
+                    height={10}
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    style={{ display: 'block' }}
+                  >
+                    <polygon points="12,18 4,8 20,8" />
+                  </svg>
+                </span>
+              </button>
+            </div>
           )}
         </div>
 
