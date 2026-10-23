@@ -341,8 +341,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
               . No account. No hassle. Just drop it.
             </p>
 
-            {/* 4. Action Buttons & Micro-Features Group (Anchored to Bottom on Mobile) */}
-            <div className="hero-bottom-actions" style={{ width: '100%', marginTop: 'auto' }}>
+            {/* 4. Action Buttons & Feature Strips Group */}
+            <div className="hero-bottom-actions" style={{ width: '100%' }}>
               <div
                 className="hero-cta-group"
                 style={{
@@ -464,7 +464,173 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
               )}
 
-              {/* 5. Feature Strip - In Very Small Manner Just Below Buttons */}
+              {/* 5. Desktop Features Strip (Finalised for desktop mode screens > 960px) */}
+              <div className="nb-features-desktop-grid">
+                {/* Feature 1: Instant Transfer */}
+                <div
+                  className="nb-feature-cell"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    textAlign: 'center',
+                    padding: '0 10px',
+                    borderRight: '1.5px solid rgba(0, 0, 0, 0.18)',
+                  }}
+                >
+                  <div
+                    className="nb-feature-icon-wrapper nb-feature-icon-zap"
+                    style={{
+                      marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <ZapIcon size={30} />
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 800,
+                      fontSize: 'clamp(12px, 1.1vw, 13.5px)',
+                      lineHeight: 1.25,
+                      color: '#000000',
+                      textAlign: 'center',
+                      margin: 0,
+                      padding: 0,
+                    }}
+                  >
+                    Instant<br />Transfer
+                  </span>
+                </div>
+
+                {/* Feature 2: End-to-End Private */}
+                <div
+                  className="nb-feature-cell"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    textAlign: 'center',
+                    padding: '0 10px',
+                    borderRight: '1.5px solid rgba(0, 0, 0, 0.18)',
+                  }}
+                >
+                  <div
+                    className="nb-feature-icon-wrapper nb-feature-icon-shield"
+                    style={{
+                      marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <ShieldIcon size={30} />
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 800,
+                      fontSize: 'clamp(12px, 1.1vw, 13.5px)',
+                      lineHeight: 1.25,
+                      color: '#000000',
+                      textAlign: 'center',
+                      margin: 0,
+                      padding: 0,
+                    }}
+                  >
+                    End-to-End<br />Private
+                  </span>
+                </div>
+
+                {/* Feature 3: Auto Expires in 24 Hours */}
+                <div
+                  className="nb-feature-cell"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    textAlign: 'center',
+                    padding: '0 10px',
+                    borderRight: '1.5px solid rgba(0, 0, 0, 0.18)',
+                  }}
+                >
+                  <div
+                    className="nb-feature-icon-wrapper nb-feature-icon-clock"
+                    style={{
+                      marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <ClockIcon size={30} />
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 800,
+                      fontSize: 'clamp(12px, 1.1vw, 13.5px)',
+                      lineHeight: 1.25,
+                      color: '#000000',
+                      textAlign: 'center',
+                      margin: 0,
+                      padding: 0,
+                    }}
+                  >
+                    Auto Expires<br />in 24 Hours
+                  </span>
+                </div>
+
+                {/* Feature 4: Download Single or ZIP */}
+                <div
+                  className="nb-feature-cell"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    textAlign: 'center',
+                    padding: '0 10px',
+                  }}
+                >
+                  <div
+                    className="nb-feature-icon-wrapper nb-feature-icon-download"
+                    style={{
+                      marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <DownloadIcon size={30} />
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 800,
+                      fontSize: 'clamp(12px, 1.1vw, 13.5px)',
+                      lineHeight: 1.25,
+                      color: '#000000',
+                      textAlign: 'center',
+                      margin: 0,
+                      padding: 0,
+                    }}
+                  >
+                    Download<br />Single or ZIP
+                  </span>
+                </div>
+              </div>
+
+              {/* 5b. Feature Strip - In Very Small Manner Just Below Buttons (Phone Devices Only - Untouched) */}
               <div className="nb-features-micro-strip">
                 <div className="nb-micro-feature">
                   <ZapIcon size={13} color="#000000" />

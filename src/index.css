@@ -377,17 +377,24 @@ input, textarea {
 /* Hero Bottom Actions (CTA Buttons + Micro-Features) */
 .hero-bottom-actions {
   width: 100%;
-  margin-top: 24px;
+  margin-top: 28px;
 }
 
-/* Micro-Features Strip - Very Small, Refined, Anchored Just Below Buttons */
-.nb-features-micro-strip {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
+/* Desktop Features Strip (Finalised for desktop screens > 960px) */
+.nb-features-desktop-grid {
   width: 100%;
+  max-width: 520px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: stretch;
+  margin-top: clamp(38px, 5vh, 56px);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Micro-Features Strip - Hidden on desktop, active on phone devices */
+.nb-features-micro-strip {
+  display: none !important;
 }
 
 .nb-micro-feature {
@@ -488,6 +495,10 @@ input, textarea {
   .hero-active-rooms {
     justify-content: flex-start !important;
     width: 100% !important;
+  }
+
+  .nb-features-desktop-grid {
+    display: none !important;
   }
 
   .nb-features-micro-strip {
