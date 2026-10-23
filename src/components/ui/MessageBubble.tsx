@@ -34,7 +34,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       : timestamp
     : null;
 
-  const handleCopy = async () => {
+  const handleCopy = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -65,14 +66,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     >
       <div
         className="nb-message-bubble"
+        onClick={() => {
+          if (isLargeText) {
+            const selection = window.getSelection()?.toString();
+            if (selection && selection.length > 0) return;
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        title={isLargeText ? (isExpanded ? 'Click anywhere to collapse' : 'Click anywhere to show full note') : undefined}
         style={{
           backgroundColor: bgColors[variant],
           border: 'var(--border-thick)',
           borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-standard)',
+          boxShadow: isExpanded ? 'var(--shadow-prominent)' : 'var(--shadow-standard)',
           padding: '16px 20px',
           position: 'relative',
           color: 'var(--color-ink)',
+          cursor: isLargeText ? 'pointer' : 'default',
+          transition: 'all 0.15s ease',
         }}
       >
         {/* Header / Badges */}
@@ -115,7 +126,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {/* Copy Button */}
             <button
-              onClick={handleCopy}
+              onClick={(e) => handleCopy(e)}
               title="Copy to clipboard"
               style={{
                 background: 'var(--color-surface-card)',
@@ -140,7 +151,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             {/* Delete Button (if authorized) */}
             {canDelete && onDelete && (
               <button
-                onClick={onDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
                 title="Delete note"
                 style={{
                   background: 'var(--color-error)',
@@ -160,7 +174,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         </div>
 
-        {/* Content with 3-Line Clamp & Neo-Brutalist Arrowhead Toggle */}
+        {/* Content with 3-Line Clamp & FAQ-Style Arrowhead Toggle */}
         <div style={{ position: 'relative' }}>
           <div
             style={{
@@ -185,6 +199,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 href={text}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 style={{
                   color: 'var(--color-ink)',
                   textDecoration: 'underline',
@@ -203,61 +218,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
           </div>
 
-          {/* Neo-brutalist Arrowhead expand/collapse toggle */}
+          {/* FAQ-Style Neo-brutalist collapse toggle bar */}
           {isLargeText && (
-            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setIsExpanded(!isExpanded)}
-                title={isExpanded ? 'Collapse note to 3 lines' : 'Expand full note'}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: '10px',
+                paddingTop: '8px',
+                borderTop: '2px dashed rgba(0, 0, 0, 0.2)',
+                color: 'var(--color-ink)',
+                fontFamily: 'var(--font-display)',
+                fontSize: '12px',
+                fontWeight: 800,
+                letterSpacing: '0.5px',
+                userSelect: 'none',
+              }}
+            >
+              <span>{isExpanded ? 'COLLAPSE' : 'SHOW MORE'}</span>
+              <span
                 style={{
-                  background: isExpanded ? 'var(--color-ink)' : '#FFFFFF',
-                  color: isExpanded ? '#FFFFFF' : 'var(--color-ink)',
-                  border: '2px solid var(--color-ink)',
-                  borderRadius: '6px',
-                  boxShadow: isExpanded ? '1px 1px 0px var(--color-ink)' : '2.5px 2.5px 0px var(--color-ink)',
-                  padding: '5px 12px',
-                  fontSize: '11px',
+                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                  fontSize: '16px',
                   fontWeight: 900,
-                  fontFamily: 'var(--font-display)',
-                  letterSpacing: '0.6px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  textTransform: 'uppercase',
-                  transform: isExpanded ? 'translate(1.5px, 1.5px)' : 'none',
-                  transition: 'all 0.1s ease',
+                  display: 'inline-block',
+                  lineHeight: 1,
                 }}
               >
-                <span>{isExpanded ? 'COLLAPSE' : 'SHOW MORE'}</span>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '18px',
-                    height: '18px',
-                    backgroundColor: isExpanded ? '#FFFFFF' : 'var(--color-primary)',
-                    color: 'var(--color-ink)',
-                    border: '1.5px solid var(--color-ink)',
-                    borderRadius: '4px',
-                    boxShadow: '1px 1px 0px var(--color-ink)',
-                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                >
-                  <svg
-                    width={10}
-                    height={10}
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    style={{ display: 'block' }}
-                  >
-                    <polygon points="12,18 4,8 20,8" />
-                  </svg>
-                </span>
-              </button>
+                ▼
+              </span>
             </div>
           )}
         </div>
