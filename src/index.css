@@ -552,6 +552,11 @@ input, textarea {
   }
 }
 
+/* Main content spacing for non-home views (RoomView, ExpiredView, Info) */
+.nb-main-content {
+  padding-top: 98px;
+}
+
 /* Room View Responsive Container & Grid */
 .nb-room-view-container {
   max-width: 1080px;
@@ -570,8 +575,12 @@ input, textarea {
 }
 
 @media (max-width: 600px) {
+  .nb-main-content {
+    padding-top: 68px !important;
+  }
+
   .nb-room-view-container {
-    padding: 16px 12px !important;
+    padding: 12px 14px 24px !important;
   }
 
   .nb-room-grid {
@@ -792,6 +801,14 @@ input, textarea {
 
 /* Extra small mobile screens (Moto G4, Galaxy S8, iPhone SE <= 380px) */
 @media (max-width: 380px) {
+  .nb-main-content {
+    padding-top: 64px !important;
+  }
+
+  .nb-room-view-container {
+    padding: 10px 10px 20px !important;
+  }
+
   .nb-room-info-bar {
     padding: 6px 10px !important;
     gap: 4px !important;

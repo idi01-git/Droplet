@@ -168,7 +168,7 @@ export const App: React.FC = () => {
         roomCode={activeTab === 'room' && currentRoom ? currentRoom.code : null}
       />
 
-      <main style={{ paddingTop: activeTab === 'home' ? 0 : '98px' }}>
+      <main className={activeTab === 'home' ? undefined : 'nb-main-content'}>
         {expiredReason ? (
           <ExpiredView
             reason={expiredReason}
