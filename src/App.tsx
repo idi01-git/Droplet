@@ -32,6 +32,9 @@ export const App: React.FC = () => {
       }
 
       const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === '404' || params.get('preview') === '404') {
+        setActiveTab('404');
+      }
       const joinParam = params.get('join');
       if (joinParam && /^\d{4}$/.test(joinParam)) {
         setInitialJoinCode(joinParam);
