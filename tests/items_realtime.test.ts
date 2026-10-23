@@ -147,4 +147,52 @@ describe('Step 5: Text, Links & Real-Time Sync', () => {
 
     ws.close();
   });
+
+  it('Broadcasts ROOM_DELETED and closes socket when owner deletes room', async () => {
+    // 1. Owner creates room
+    const createRes = await request(app).post('/api/rooms');
+    const { room, sessionToken: ownerToken } = createRes.body.data;
+
+    // 2. Participant joins room
+    const joinRes = await request(app)
+      .post('/api/rooms/join')
+      .send({ code: room.code });
+    const participantToken = joinRes.body.data.sessionToken;
+
+    // 3. Participant connects WebSocket
+    const wsUrl = `ws://localhost:${wsServerPort}/ws?token=${participantToken}&roomId=${room.id}`;
+    const ws = new WebSocket(wsUrl);
+
+    await new Promise<void>((resolve, reject) => {
+      ws.on('open', () => resolve());
+      ws.on('error', (err) => reject(err));
+    });
+
+    const eventPromise = new Promise<any>((resolve) => {
+      ws.on('message', (data) => {
+        const parsed = JSON.parse(data.toString());
+        resolve(parsed);
+      });
+    });
+
+    const closePromise = new Promise<string>((resolve) => {
+      ws.on('close', (_code, reason) => {
+        resolve(reason.toString());
+      });
+    });
+
+    // 4. Owner deletes room
+    const deleteRes = await request(app)
+      .delete(`/api/rooms/${room.id}`)
+      .set('Authorization', `Bearer ${ownerToken}`);
+    expect(deleteRes.status).toBe(200);
+
+    // 5. Participant receives ROOM_DELETED event and close
+    const event = await eventPromise;
+    expect(event.type).toBe('ROOM_DELETED');
+    expect(event.roomId).toBe(room.id);
+
+    const closeReason = await closePromise;
+    expect(closeReason).toBe('Room deleted by owner');
+  });
 });

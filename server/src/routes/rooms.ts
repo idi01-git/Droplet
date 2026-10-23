@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { RoomService } from '../services/roomService';
 import { ArchiveService } from '../services/archiveService';
+import { realtimeService } from '../services/realtimeService';
 import { requireAuth, requireOwner } from '../middleware/auth';
 import {
   rateLimitRoomCreation,
@@ -127,6 +128,15 @@ router.delete(
       if (req.room?.id !== roomId) {
         throw new AppError('FORBIDDEN', 'Cannot delete a room other than the authenticated room.', 403);
       }
+
+      // Notify all connected visitors that the room is deleted before destroying state
+      realtimeService.broadcastToRoom(roomId, {
+        type: 'ROOM_DELETED',
+        roomId,
+        timestamp: Date.now(),
+        payload: { reason: 'This room was deleted by the owner.' },
+      });
+      realtimeService.closeRoomConnections(roomId, 'Room deleted by owner');
 
       RoomService.deleteRoom(roomId);
       unregisterCreatedRoom(roomId);

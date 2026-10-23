@@ -55,14 +55,16 @@ export class CleanupService {
         }
       }
 
-      // Notify any connected clients before disconnecting
-      realtimeService.broadcastToRoom(room.id, {
-        type: 'ROOM_EXPIRED',
-        roomId: room.id,
-        timestamp: now,
-        payload: { reason: 'This room has reached its 24-hour expiration.' },
-      });
-      realtimeService.closeRoomConnections(room.id, 'Room expired');
+      // Notify any connected clients before disconnecting (if not already deleted)
+      if (room.status !== 'deleted') {
+        realtimeService.broadcastToRoom(room.id, {
+          type: 'ROOM_EXPIRED',
+          roomId: room.id,
+          timestamp: now,
+          payload: { reason: 'This room has reached its 24-hour expiration.' },
+        });
+        realtimeService.closeRoomConnections(room.id, 'Room expired');
+      }
 
       // Purge database row (foreign keys cascade delete items, sessions, upload_reservations)
       db.prepare(`DELETE FROM rooms WHERE id = ?`).run(room.id);

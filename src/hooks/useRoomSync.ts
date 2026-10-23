@@ -6,9 +6,10 @@ export interface UseRoomSyncOptions {
   roomId: string;
   sessionToken: string;
   onRoomExpired?: (reason?: string) => void;
+  onRoomDeleted?: (reason?: string) => void;
 }
 
-export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSyncOptions) {
+export function useRoomSync({ roomId, sessionToken, onRoomExpired, onRoomDeleted }: UseRoomSyncOptions) {
   const [items, setItems] = useState<Item[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,33 +18,75 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const isDisposedRef = useRef(false);
+
+  // Terminate connection cleanly when room is deleted by owner
+  const handleRoomDeleted = useCallback((reason?: string) => {
+    isDisposedRef.current = true;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    setIsConnected(false);
+    if (onRoomDeleted) {
+      onRoomDeleted(reason || 'This room was deleted by the owner.');
+    } else {
+      onRoomExpired?.(reason || 'This room was deleted by the owner.');
+    }
+  }, [onRoomDeleted, onRoomExpired]);
+
+  // Terminate connection cleanly when room naturally expires
+  const handleRoomExpired = useCallback((reason?: string) => {
+    isDisposedRef.current = true;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    setIsConnected(false);
+    onRoomExpired?.(reason || 'This room has closed.');
+  }, [onRoomExpired]);
 
   // Fetch full snapshot from API
   const refreshSnapshot = useCallback(async () => {
+    if (isDisposedRef.current) return;
     try {
       const details = await api.getRoom(roomId, sessionToken);
+      if (isDisposedRef.current) return;
       setItems(details.items);
       setError(null);
     } catch (err: any) {
-      if (err.code === 'ROOM_EXPIRED' || err.code === 'ROOM_NOT_FOUND') {
-        onRoomExpired?.(err.message || 'Room is no longer accessible.');
+      if (isDisposedRef.current) return;
+      if (err.code === 'ROOM_NOT_FOUND') {
+        handleRoomDeleted(err.message || 'Room was deleted by the owner.');
+      } else if (err.code === 'ROOM_EXPIRED') {
+        handleRoomExpired(err.message || 'Room is no longer accessible.');
       } else {
         setError(err.message || 'Failed to refresh room items.');
       }
     } finally {
-      setIsLoading(false);
+      if (!isDisposedRef.current) {
+        setIsLoading(false);
+      }
     }
-  }, [roomId, sessionToken, onRoomExpired]);
+  }, [roomId, sessionToken, handleRoomDeleted, handleRoomExpired]);
 
   // Connect WebSocket
   useEffect(() => {
-    let isDisposed = false;
+    isDisposedRef.current = false;
 
     // Initial snapshot fetch
     refreshSnapshot();
 
     const connectWebSocket = () => {
-      if (isDisposed) return;
+      if (isDisposedRef.current) return;
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(
@@ -54,7 +97,7 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
       socketRef.current = ws;
 
       ws.onopen = () => {
-        if (isDisposed) {
+        if (isDisposedRef.current) {
           ws.close();
           return;
         }
@@ -65,6 +108,7 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
       };
 
       ws.onmessage = (event) => {
+        if (isDisposedRef.current) return;
         try {
           const roomEvent: RoomEvent = JSON.parse(event.data);
 
@@ -77,22 +121,30 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
             });
           } else if (roomEvent.type === 'ITEM_DELETED' && roomEvent.payload.itemId) {
             setItems((prev) => prev.filter((i) => i.id !== roomEvent.payload.itemId));
-          } else if (roomEvent.type === 'ROOM_DELETED' || roomEvent.type === 'ROOM_EXPIRED') {
-            onRoomExpired?.(roomEvent.payload.reason || 'This room has closed.');
+          } else if (roomEvent.type === 'ROOM_DELETED') {
+            handleRoomDeleted(roomEvent.payload.reason || 'This room was deleted by the owner.');
+          } else if (roomEvent.type === 'ROOM_EXPIRED') {
+            handleRoomExpired(roomEvent.payload.reason || 'This room has closed.');
           }
         } catch (e) {
           console.error('Failed to parse incoming WebSocket message', e);
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         setIsConnected(false);
-        if (!isDisposed) {
-          // Exponential backoff reconnect
-          const backoff = Math.min(1000 * Math.pow(1.5, reconnectAttemptRef.current), 10000);
-          reconnectAttemptRef.current += 1;
-          reconnectTimeoutRef.current = setTimeout(connectWebSocket, backoff);
+        if (isDisposedRef.current) return;
+
+        // If server closed connection explicitly due to owner deletion
+        if (event.reason === 'Room deleted by owner') {
+          handleRoomDeleted('This room was deleted by the owner.');
+          return;
         }
+
+        // Exponential backoff reconnect
+        const backoff = Math.min(1000 * Math.pow(1.5, reconnectAttemptRef.current), 10000);
+        reconnectAttemptRef.current += 1;
+        reconnectTimeoutRef.current = setTimeout(connectWebSocket, backoff);
       };
 
       ws.onerror = () => {
@@ -103,7 +155,7 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
     connectWebSocket();
 
     return () => {
-      isDisposed = true;
+      isDisposedRef.current = true;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
@@ -111,7 +163,7 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired }: UseRoomSync
         socketRef.current.close();
       }
     };
-  }, [roomId, sessionToken, refreshSnapshot, onRoomExpired]);
+  }, [roomId, sessionToken, refreshSnapshot, handleRoomDeleted, handleRoomExpired]);
 
   // Methods to post & delete items
   const postTextItem = async (text: string, type?: 'text' | 'link') => {

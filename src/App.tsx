@@ -17,6 +17,10 @@ export const App: React.FC = () => {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [expiredReason, setExpiredReason] = useState<string | null>(null);
   const [initialJoinCode, setInitialJoinCode] = useState<string>('');
+  const [homeNotice, setHomeNotice] = useState<{
+    variant: 'warning' | 'info' | 'error' | 'success';
+    message: string;
+  } | null>(null);
 
   // Check URL query parameter on load (e.g., ?join=4827 from QR code)
   useEffect(() => {
@@ -52,6 +56,7 @@ export const App: React.FC = () => {
     setCurrentRoom(room);
     setSessionToken(token);
     setExpiredReason(null);
+    setHomeNotice(null);
     setActiveTab('room');
 
     try {
@@ -67,6 +72,7 @@ export const App: React.FC = () => {
     setCurrentRoom(null);
     setSessionToken(null);
     setExpiredReason(null);
+    setHomeNotice(null);
     setActiveTab('home');
 
     localStorage.removeItem(STORAGE_KEY_ROOM);
@@ -77,12 +83,30 @@ export const App: React.FC = () => {
     if (currentRoom) {
       recentRoomsService.removeRecentRoom(currentRoom.code);
     }
-    setExpiredReason(reason || 'This room has reached its 24-hour expiration or was deleted.');
+    setExpiredReason(reason || 'This room has reached its 24-hour expiration.');
     setCurrentRoom(null);
     setSessionToken(null);
 
     localStorage.removeItem(STORAGE_KEY_ROOM);
     localStorage.removeItem(STORAGE_KEY_TOKEN);
+  };
+
+  const handleRoomDeleted = (reason?: string) => {
+    if (currentRoom) {
+      recentRoomsService.removeRecentRoom(currentRoom.code);
+    }
+    setCurrentRoom(null);
+    setSessionToken(null);
+    setExpiredReason(null);
+    setActiveTab('home');
+
+    localStorage.removeItem(STORAGE_KEY_ROOM);
+    localStorage.removeItem(STORAGE_KEY_TOKEN);
+
+    setHomeNotice({
+      variant: 'warning',
+      message: reason || 'The room was deleted by the owner.',
+    });
   };
 
   const handleQuickCreate = async () => {
@@ -143,6 +167,7 @@ export const App: React.FC = () => {
             sessionToken={sessionToken}
             onLeave={handleLeaveRoom}
             onExpired={handleRoomExpired}
+            onDeleted={handleRoomDeleted}
           />
         ) : activeTab === 'info' ? (
           /* About & Architecture View */
@@ -277,6 +302,8 @@ export const App: React.FC = () => {
           <HomeView
             initialCode={initialJoinCode}
             onRoomJoined={handleRoomJoined}
+            notice={homeNotice}
+            onDismissNotice={() => setHomeNotice(null)}
           />
         )}
       </main>

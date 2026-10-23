@@ -18,9 +18,16 @@ import { recentRoomsService, RecentRoom, MAX_ACTIVE_CREATED_ROOMS } from '../ser
 export interface HomeViewProps {
   onRoomJoined: (room: RoomSummary, sessionToken: string) => void;
   initialCode?: string;
+  notice?: { variant: 'warning' | 'info' | 'error' | 'success'; message: string } | null;
+  onDismissNotice?: () => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = '' }) => {
+export const HomeView: React.FC<HomeViewProps> = ({
+  onRoomJoined,
+  initialCode = '',
+  notice,
+  onDismissNotice,
+}) => {
   const [code, setCode] = useState(initialCode);
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
@@ -255,7 +262,16 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
               flexShrink: 0,
             }}
           >
-            {/* Error Alert Display */}
+            {/* Notice or Error Alert Display */}
+            {notice && (
+              <div style={{ width: '100%', marginBottom: '14px' }}>
+                <Alert
+                  variant={notice.variant}
+                  message={notice.message}
+                  onDismiss={onDismissNotice}
+                />
+              </div>
+            )}
             {error && (
               <div style={{ width: '100%', marginBottom: '14px' }}>
                 <Alert variant="error" message={error} onDismiss={() => setError(null)} />

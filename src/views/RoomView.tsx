@@ -23,6 +23,7 @@ export interface RoomViewProps {
   sessionToken: string;
   onLeave: () => void;
   onExpired: (reason?: string) => void;
+  onDeleted?: (reason?: string) => void;
 }
 
 export const RoomView: React.FC<RoomViewProps> = ({
@@ -30,11 +31,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
   sessionToken,
   onLeave,
   onExpired,
+  onDeleted,
 }) => {
   const { items, isConnected, postTextItem, deleteItem, error: syncError } = useRoomSync({
     roomId: room.id,
     sessionToken,
     onRoomExpired: onExpired,
+    onRoomDeleted: onDeleted,
   });
 
   const [composerText, setComposerText] = useState('');
