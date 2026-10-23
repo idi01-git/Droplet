@@ -1187,20 +1187,23 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
             maxWidth: '1200px',
             margin: '0 auto',
             display: 'flex',
-            flexWrap: 'wrap',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '20px',
+            justifyContent: 'center',
+            textAlign: 'center',
+            gap: '16px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Brand + Description */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <DropletLogo size="sm" layout="horizontal" />
             <span style={{ fontSize: '13px', color: '#71717A', fontWeight: 600 }}>
               — Temporary peer sharing without accounts.
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '13px', fontWeight: 700 }}>
+          {/* Nav Links */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', fontSize: '13px', fontWeight: 700, flexWrap: 'wrap' }}>
             <a href="#features" style={{ color: '#000000', textDecoration: 'none' }}>
               Features
             </a>
@@ -1215,8 +1218,25 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
             </a>
           </div>
 
-          <div style={{ fontSize: '12px', color: '#71717A', fontWeight: 600 }}>
-            Drop it. Pick it up. Let it disappear.
+          {/* Tagline & Attribution */}
+          <div style={{ fontSize: '13px', color: '#71717A', fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <span>Drop it. Pick it up. Let it disappear.</span>
+            <span style={{ fontSize: '12.5px', color: '#18181B', fontWeight: 700 }}>
+              Made by{' '}
+              <a
+                href="https://github.com/idi01-git"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#000000',
+                  fontWeight: 900,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '3px',
+                }}
+              >
+                shivang
+              </a>
+            </span>
           </div>
         </div>
       </footer>

@@ -481,21 +481,21 @@ input, textarea {
     max-width: 440px !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     padding-bottom: 8px !important;
   }
 
   .hero-active-rooms {
-    justify-content: center !important;
+    justify-content: flex-start !important;
     width: 100% !important;
   }
 
   .nb-features-micro-strip {
     display: grid !important;
     grid-template-columns: repeat(2, auto) !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     align-items: center !important;
-    gap: 8px 24px !important;
+    gap: 8px 20px !important;
     margin-top: 14px !important;
     width: 100% !important;
   }
@@ -516,7 +516,7 @@ input, textarea {
 @media (max-width: 600px) {
   .hero-cta-group {
     width: 100% !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     gap: 10px !important;
   }
 
@@ -532,6 +532,7 @@ input, textarea {
 @media (max-width: 380px) {
   .nb-features-micro-strip {
     gap: 6px 14px !important;
+    justify-content: flex-start !important;
   }
 
   .nb-micro-feature {
