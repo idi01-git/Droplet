@@ -492,10 +492,10 @@ input, textarea {
 
   .nb-features-micro-strip {
     display: grid !important;
-    grid-template-columns: repeat(2, auto) !important;
-    justify-content: flex-start !important;
+    grid-template-columns: auto auto !important;
+    justify-content: space-between !important;
     align-items: center !important;
-    gap: 8px 20px !important;
+    gap: 8px 16px !important;
     margin-top: 14px !important;
     width: 100% !important;
   }
@@ -531,8 +531,8 @@ input, textarea {
 
 @media (max-width: 380px) {
   .nb-features-micro-strip {
-    gap: 6px 14px !important;
-    justify-content: flex-start !important;
+    gap: 6px 12px !important;
+    justify-content: space-between !important;
   }
 
   .nb-micro-feature {
