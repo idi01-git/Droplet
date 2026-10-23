@@ -27,7 +27,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
-      if (pathname !== '/' && pathname !== '' && pathname !== '/index.html') {
+      const directCodeMatch = pathname.match(/^\/(?:join\/|room\/)?(\d{4})$/);
+      if (directCodeMatch) {
+        setInitialJoinCode(directCodeMatch[1]);
+        setActiveTab('home');
+      } else if (pathname !== '/' && pathname !== '' && pathname !== '/index.html') {
         setActiveTab('404');
       }
 
@@ -43,7 +47,11 @@ export const App: React.FC = () => {
       // Handle popstate (browser back/forward button)
       const handlePopState = () => {
         const path = window.location.pathname;
-        if (path !== '/' && path !== '' && path !== '/index.html') {
+        const codeMatch = path.match(/^\/(?:join\/|room\/)?(\d{4})$/);
+        if (codeMatch) {
+          setInitialJoinCode(codeMatch[1]);
+          setActiveTab('home');
+        } else if (path !== '/' && path !== '' && path !== '/index.html') {
           setActiveTab('404');
         } else if (!currentRoom) {
           setActiveTab('home');
