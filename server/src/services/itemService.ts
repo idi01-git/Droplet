@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../db/database';
 import { realtimeService } from './realtimeService';
@@ -112,11 +111,11 @@ export class ItemService {
   /**
    * Authorize and stream an uploaded file.
    */
-  public static getFileDownload(
+  public static async getFileDownload(
     roomId: string,
     itemId: string,
     _session: RoomSession
-  ): { stream: fs.ReadStream; filename: string; mimeType: string; sizeBytes: number } {
+  ): Promise<{ stream: any; filename: string; mimeType: string; sizeBytes: number }> {
     const db = getDatabase();
 
     const item = db
@@ -139,11 +138,12 @@ export class ItemService {
       throw new AppError('INVALID_PAYLOAD', 'File not found in this room.', 404);
     }
 
-    if (!storageService.exists(item.objectKey)) {
+    const exists = await storageService.exists(item.objectKey);
+    if (!exists) {
       throw new AppError('UPLOAD_FAILED', 'File content is unavailable or has been purged.', 404);
     }
 
-    const stream = storageService.getStream(item.objectKey);
+    const stream = await storageService.getStream(item.objectKey);
     const safeFilename = sanitizeFilename(item.filename || 'download');
 
     return {

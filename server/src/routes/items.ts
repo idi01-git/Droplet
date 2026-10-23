@@ -39,10 +39,10 @@ router.post(
 router.get(
   '/:itemId/download',
   requireAuth,
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { roomId, itemId } = req.params;
-      const file = ItemService.getFileDownload(roomId, itemId, req.session!);
+      const file = await ItemService.getFileDownload(roomId, itemId, req.session!);
 
       res.setHeader('Content-Type', file.mimeType);
       res.setHeader('Content-Length', file.sizeBytes);

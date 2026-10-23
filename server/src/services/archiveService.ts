@@ -1,5 +1,4 @@
 import JSZip from 'jszip';
-import fs from 'fs';
 import { getDatabase } from '../db/database';
 import { storageService } from './storageService';
 import { DROPLET_LIMITS } from '../../../shared/limits';
@@ -65,7 +64,7 @@ export class ArchiveService {
 
     // 4. Add files to ZIP with sanitized, collision-free names
     for (const file of fileItems) {
-      if (!file.objectKey || !storageService.exists(file.objectKey)) {
+      if (!file.objectKey || !(await storageService.exists(file.objectKey))) {
         continue;
       }
 
@@ -82,9 +81,8 @@ export class ArchiveService {
       }
       usedFilenames.set(safeBase, count + 1);
 
-      // Read file buffer from storage
-      const filePath = (storageService as any).driver.getFilePath(file.objectKey);
-      const fileBuffer = await fs.promises.readFile(filePath);
+      // Read file buffer from storage (works seamlessly for local and S3)
+      const fileBuffer = await storageService.getBuffer(file.objectKey);
       zip.file(finalName, fileBuffer);
     }
 

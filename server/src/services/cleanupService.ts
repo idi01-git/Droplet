@@ -46,7 +46,7 @@ export class CleanupService {
 
       for (const item of fileItems) {
         try {
-          if (storageService.exists(item.objectKey)) {
+          if (await storageService.exists(item.objectKey)) {
             await storageService.delete(item.objectKey);
             filesPurged++;
           }
