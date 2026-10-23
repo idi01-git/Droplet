@@ -683,15 +683,14 @@ input, textarea {
   height: 38px;
 }
 
-/* On Phone devices (<= 680px): Compact single-row layout with icon-only action buttons */
+/* On Phone devices (<= 680px): Compact single-row layout with icon-only action buttons and symmetrical inner spacing */
 @media (max-width: 680px) {
   .nb-room-info-bar {
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    padding: 8px 10px !important;
+    padding: 8px 12px !important;
     border-radius: 14px !important;
-    gap: 6px !important;
     box-shadow: 3px 3px 0px #000000 !important;
   }
 
@@ -699,7 +698,7 @@ input, textarea {
   .nb-room-bar-right {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 5px !important;
     flex-wrap: nowrap !important;
   }
 
@@ -712,52 +711,52 @@ input, textarea {
   }
 
   .nb-room-btn-leave {
-    width: 36px !important;
-    height: 36px !important;
+    width: 34px !important;
+    height: 34px !important;
     padding: 0 !important;
     border-radius: 9px !important;
     flex-shrink: 0 !important;
   }
 
   .nb-room-btn-share {
-    width: 36px !important;
-    height: 36px !important;
+    width: 34px !important;
+    height: 34px !important;
     padding: 0 !important;
     border-radius: 9px !important;
     flex-shrink: 0 !important;
   }
 
   .nb-room-btn-delete {
-    width: 36px !important;
-    height: 36px !important;
+    width: 34px !important;
+    height: 34px !important;
     padding: 0 !important;
     border-radius: 9px !important;
     flex-shrink: 0 !important;
   }
 
   .nb-room-code-badge {
-    height: 36px !important;
-    padding: 0 10px !important;
+    height: 34px !important;
+    padding: 0 7px !important;
     border-radius: 9px !important;
-    gap: 6px !important;
+    gap: 4.5px !important;
     flex-shrink: 0 !important;
   }
 
   .nb-room-badge-tag {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
   }
 
   .nb-room-badge-code {
-    font-size: 15px !important;
-    letter-spacing: 1.5px !important;
+    font-size: 14px !important;
+    letter-spacing: 1px !important;
   }
 
   .nb-room-expiry-chip {
-    height: 32px !important;
-    padding: 0 9px !important;
-    font-size: 11.5px !important;
+    height: 30px !important;
+    padding: 0 7px !important;
+    font-size: 11px !important;
     border-radius: 9999px !important;
-    gap: 4px !important;
+    gap: 3.5px !important;
     flex-shrink: 0 !important;
   }
 }
@@ -765,7 +764,7 @@ input, textarea {
 /* Extra small mobile screens (Moto G4, Galaxy S8, iPhone SE <= 380px) */
 @media (max-width: 380px) {
   .nb-room-info-bar {
-    padding: 6px 8px !important;
+    padding: 6px 10px !important;
     gap: 4px !important;
   }
 
@@ -777,26 +776,26 @@ input, textarea {
   .nb-room-btn-leave,
   .nb-room-btn-share,
   .nb-room-btn-delete {
-    width: 32px !important;
-    height: 32px !important;
+    width: 31px !important;
+    height: 31px !important;
     border-radius: 8px !important;
   }
 
   .nb-room-code-badge {
-    height: 32px !important;
-    padding: 0 7px !important;
-    gap: 4px !important;
+    height: 31px !important;
+    padding: 0 6px !important;
+    gap: 3.5px !important;
   }
 
   .nb-room-badge-code {
-    font-size: 14px !important;
-    letter-spacing: 1px !important;
+    font-size: 13.5px !important;
+    letter-spacing: 0.8px !important;
   }
 
   .nb-room-expiry-chip {
     height: 28px !important;
-    padding: 0 7px !important;
-    font-size: 11px !important;
+    padding: 0 6px !important;
+    font-size: 10.5px !important;
   }
 }
 
