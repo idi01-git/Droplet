@@ -20,8 +20,10 @@ export const recentRoomsService = {
       if (!data) return [];
       const list: RecentRoom[] = JSON.parse(data);
       const now = Date.now();
-      // Filter out expired rooms automatically
-      const valid = list.filter((r) => r.expiresAt > now);
+      // Filter out expired rooms and malformed/empty codes automatically
+      const valid = list.filter(
+        (r) => r.expiresAt > now && typeof r.code === 'string' && /^\d{4}$/.test(r.code.trim())
+      );
       if (valid.length !== list.length) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
       }

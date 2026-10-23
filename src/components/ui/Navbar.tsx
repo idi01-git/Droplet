@@ -229,7 +229,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
             >
               <QrCodeIcon size={17} />
-              <span>Join Room</span>
+              <span className="nb-btn-text-full">Join Room</span>
+              <span className="nb-btn-text-short">Join</span>
             </button>
 
             {/* Create a Room Primary Button */}
@@ -250,7 +251,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 border: '2.5px solid #000000',
                 borderRadius: '12px',
                 boxShadow: '2.5px 2.5px 0px #000000',
-                padding: '10px 22px',
+                padding: '10px clamp(12px, 2.5vw, 22px)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 900,
                 fontSize: '14px',
@@ -260,7 +261,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 transition: 'all 0.12s ease',
               }}
             >
-              <span>Create a Room</span>
+              <span className="nb-btn-text-full">Create a Room</span>
+              <span className="nb-btn-text-short">Create</span>
               <ArrowRightIcon size={16} strokeWidth={2.5} />
             </button>
           </div>

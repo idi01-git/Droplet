@@ -176,9 +176,22 @@ input, textarea {
   gap: 6px;
 }
 
+.nb-btn-text-short {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .nb-nav-links {
     display: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .nb-btn-text-full {
+    display: none !important;
+  }
+  .nb-btn-text-short {
+    display: inline !important;
   }
 }
 
@@ -250,14 +263,59 @@ input, textarea {
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
-    gap: 32px !important;
+    gap: 28px !important;
+    padding: clamp(60px, 8vh, 76px) 16px 28px 16px !important;
   }
 
   .hero-mascot-wrapper {
     order: -1;
-    max-width: 220px !important;
-    max-height: 220px !important;
+    max-width: 190px !important;
+    max-height: 190px !important;
     margin: 0 auto;
   }
+
+  .hero-active-rooms {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .nb-features-grid {
+    transform: none !important;
+    margin-top: 36px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px 14px !important;
+    width: 100% !important;
+    max-width: 460px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .nb-feature-cell {
+    border-right: none !important;
+    padding: 6px !important;
+  }
 }
+
+@media (max-width: 600px) {
+  .hero-cta-group {
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 12px !important;
+  }
+
+  .hero-cta-group button {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 13px 20px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .nb-features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px 8px !important;
+  }
+}
+
 

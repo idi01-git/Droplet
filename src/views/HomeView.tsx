@@ -325,12 +325,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
 
             {/* 4. Action Buttons (Create a Room & Join a Room) */}
             <div
+              className="hero-cta-group"
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 gap: '14px',
                 marginBottom: '0',
+                width: '100%',
               }}
             >
               {/* Primary CTA: Create a Room */}
@@ -386,9 +388,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
               </button>
             </div>
 
-            {/* Discreet Recent Active Rooms Quick Access */}
-            {recentRooms.length > 0 && (
+            {/* Discreet Recent Active Rooms Quick Access - No # symbol, strictly valid 4 digits */}
+            {recentRooms.filter((r) => r.code && /^\d{4}$/.test(r.code.trim())).length > 0 && (
               <div
+                className="hero-active-rooms"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -403,45 +406,48 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
                 <span style={{ fontWeight: 800, color: '#18181B', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Your Active Rooms:
                 </span>
-                {recentRooms.map((r) => (
-                  <button
-                    key={r.code}
-                    onClick={() => handleOpenCreatedRoom(r)}
-                    title={`Reopen your room #${r.code}`}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      backgroundColor: '#FFFFFF',
-                      border: '1.5px solid #000000',
-                      borderRadius: '6px',
-                      padding: '2px 8px',
-                      fontSize: '12px',
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 800,
-                      color: '#000000',
-                      boxShadow: '1.5px 1.5px 0px #000000',
-                      cursor: 'pointer',
-                      transition: 'transform 0.1s ease, background-color 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FFE000';
-                      e.currentTarget.style.transform = 'translate(-1px, -1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FFFFFF';
-                      e.currentTarget.style.transform = 'none';
-                    }}
-                  >
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00D084', display: 'inline-block' }} />
-                    <span>#{r.code}</span>
-                  </button>
-                ))}
+                {recentRooms
+                  .filter((r) => r.code && /^\d{4}$/.test(r.code.trim()))
+                  .map((r) => (
+                    <button
+                      key={r.code}
+                      onClick={() => handleOpenCreatedRoom(r)}
+                      title={`Reopen your room ${r.code}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1.5px solid #000000',
+                        borderRadius: '6px',
+                        padding: '3px 9px',
+                        fontSize: '12px',
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 800,
+                        color: '#000000',
+                        boxShadow: '1.5px 1.5px 0px #000000',
+                        cursor: 'pointer',
+                        transition: 'transform 0.1s ease, background-color 0.1s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFE000';
+                        e.currentTarget.style.transform = 'translate(-1px, -1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00D084', display: 'inline-block' }} />
+                      <span>{r.code}</span>
+                    </button>
+                  ))}
               </div>
             )}
 
-            {/* 5. Features Strip - Shifted 20% more below */}
+            {/* 5. Features Strip */}
             <div
+              className="nb-features-grid"
               style={{
                 width: '100%',
                 display: 'grid',
@@ -1501,27 +1507,29 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
                   <span style={{ fontSize: '11.5px', color: '#71717A', fontWeight: 700 }}>
                     Your rooms:
                   </span>
-                  {recentRooms.map((r) => (
-                    <button
-                      key={r.code}
-                      type="button"
-                      onClick={() => handleCodeChange(r.code)}
-                      style={{
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 800,
-                        backgroundColor: code === r.code ? '#FFE000' : '#FFFFFF',
-                        border: '1.5px solid #000000',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        boxShadow: '1.5px 1.5px 0px #000000',
-                        transition: 'all 0.1s ease',
-                      }}
-                    >
-                      #{r.code}
-                    </button>
-                  ))}
+                  {recentRooms
+                    .filter((r) => r.code && /^\d{4}$/.test(r.code.trim()))
+                    .map((r) => (
+                      <button
+                        key={r.code}
+                        type="button"
+                        onClick={() => handleCodeChange(r.code)}
+                        style={{
+                          padding: '2px 8px',
+                          fontSize: '12px',
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 800,
+                          backgroundColor: code === r.code ? '#FFE000' : '#FFFFFF',
+                          border: '1.5px solid #000000',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          boxShadow: '1.5px 1.5px 0px #000000',
+                          transition: 'all 0.1s ease',
+                        }}
+                      >
+                        {r.code}
+                      </button>
+                    ))}
                 </div>
               )}
 
