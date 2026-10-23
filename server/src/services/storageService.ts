@@ -195,10 +195,15 @@ export class HybridStorageDriver implements StorageDriver {
   private s3Driver: S3StorageDriver;
   private thresholdBytes: number;
 
-  constructor(thresholdBytes = DROPLET_LIMITS.HYBRID_S3_THRESHOLD_BYTES) {
+  constructor(thresholdBytes?: number) {
     this.localDriver = new LocalStorageDriver();
     this.s3Driver = new S3StorageDriver();
-    this.thresholdBytes = thresholdBytes;
+    const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
+    const defaultThreshold = driverType === 's3' ? 0 : DROPLET_LIMITS.HYBRID_S3_THRESHOLD_BYTES;
+    const envThreshold = process.env.S3_THRESHOLD_BYTES !== undefined
+      ? parseInt(process.env.S3_THRESHOLD_BYTES, 10)
+      : defaultThreshold;
+    this.thresholdBytes = thresholdBytes !== undefined ? thresholdBytes : envThreshold;
   }
 
   private isS3Key(key: string): boolean {
@@ -313,8 +318,21 @@ class StorageService {
     }
     const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
 
-    if (driverType === 's3' || driverType === 'hybrid') {
-      if (typeof sizeBytes === 'number' && sizeBytes <= DROPLET_LIMITS.HYBRID_S3_THRESHOLD_BYTES) {
+    if (driverType === 's3') {
+      const threshold = process.env.S3_THRESHOLD_BYTES !== undefined
+        ? parseInt(process.env.S3_THRESHOLD_BYTES, 10)
+        : 0;
+      if (typeof sizeBytes === 'number' && sizeBytes <= threshold && threshold > 0) {
+        return `loc_${id}`;
+      }
+      return `s3_${id}`;
+    }
+
+    if (driverType === 'hybrid') {
+      const threshold = process.env.S3_THRESHOLD_BYTES !== undefined
+        ? parseInt(process.env.S3_THRESHOLD_BYTES, 10)
+        : DROPLET_LIMITS.HYBRID_S3_THRESHOLD_BYTES;
+      if (typeof sizeBytes === 'number' && sizeBytes <= threshold) {
         return `loc_${id}`;
       }
       return `s3_${id}`;
