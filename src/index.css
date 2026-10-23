@@ -49,6 +49,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  overflow-x: hidden;
 }
 
 body {
@@ -221,7 +222,7 @@ input, textarea {
 
 @media (max-width: 600px) {
   .nb-navbar-wrapper {
-    padding: 0 10px !important;
+    padding: 0 12px !important;
     top: 10px !important;
   }
 
@@ -548,6 +549,34 @@ input, textarea {
 
   .nb-micro-feature {
     font-size: 10.5px !important;
+  }
+}
+
+/* Room View Responsive Container & Grid */
+.nb-room-view-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.nb-room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .nb-room-view-container {
+    padding: 16px 12px !important;
+  }
+
+  .nb-room-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
   }
 }
 

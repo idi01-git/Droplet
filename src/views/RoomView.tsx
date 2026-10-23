@@ -341,7 +341,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '24px 20px' }}>
+    <div className="nb-room-view-container">
       {/* Error Alerts */}
       {(actionError || syncError) && (
         <div style={{ marginBottom: '16px' }}>
@@ -367,13 +367,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
       </div>
 
       {/* Main Room Layout: Left (Notes & Composer) | Right (Files) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: '24px',
-        }}
-      >
+      <div className="nb-room-grid">
         {/* Left Column: Text & Link Feed + Composer */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Text Composer Card */}
