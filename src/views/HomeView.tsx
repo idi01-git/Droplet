@@ -1367,7 +1367,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         style={{
           borderTop: '2.5px solid #000000',
           backgroundColor: '#FFFFFF',
-          padding: '36px 20px',
+          padding: '32px 24px',
         }}
       >
         <div
@@ -1376,57 +1376,90 @@ export const HomeView: React.FC<HomeViewProps> = ({
             margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            gap: '16px',
+            gap: '24px',
           }}
         >
-          {/* Brand + Description (Strictly Single Row) */}
+          {/* Row 1: Droplet Brand & Text on Left, Sections on Right */}
           <div
-            className="nb-footer-brand-row"
+            className="nb-footer-top-row"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              gap: '20px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* Droplet & Text on Left */}
+            <div
+              className="nb-footer-brand-row"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'nowrap',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <DropletLogo size="sm" layout="horizontal" height={26} />
+              <span
+                style={{
+                  fontSize: 'clamp(11px, 2.6vw, 13px)',
+                  color: '#71717A',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                — Temporary peer sharing without accounts.
+              </span>
+            </div>
+
+            {/* Sections on Right */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '24px',
+                fontSize: '13.5px',
+                fontWeight: 700,
+                flexWrap: 'wrap',
+              }}
+            >
+              <a href="#features" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+                Features
+              </a>
+              <a href="#how-it-works" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+                How it works
+              </a>
+              <a href="#why-droplet" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+                Why Droplet
+              </a>
+              <a href="#faq" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+                FAQ
+              </a>
+            </div>
+          </div>
+
+          {/* Row 2: Tagline & Attribution (Strictly Single Row, Center Justified) */}
+          <div
+            className="nb-footer-bottom-row"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              flexWrap: 'nowrap',
-              maxWidth: '100%',
+              gap: '10px',
+              fontSize: '13px',
+              color: '#71717A',
+              fontWeight: 600,
+              flexWrap: 'wrap',
+              textAlign: 'center',
+              width: '100%',
             }}
           >
-            <DropletLogo size="sm" layout="horizontal" height={26} />
-            <span
-              style={{
-                fontSize: 'clamp(11px, 2.6vw, 13px)',
-                color: '#71717A',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              — Temporary peer sharing without accounts.
-            </span>
-          </div>
-
-          {/* Nav Links */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', fontSize: '13px', fontWeight: 700, flexWrap: 'wrap' }}>
-            <a href="#features" style={{ color: '#000000', textDecoration: 'none' }}>
-              Features
-            </a>
-            <a href="#how-it-works" style={{ color: '#000000', textDecoration: 'none' }}>
-              How it works
-            </a>
-            <a href="#why-droplet" style={{ color: '#000000', textDecoration: 'none' }}>
-              Why Droplet
-            </a>
-            <a href="#faq" style={{ color: '#000000', textDecoration: 'none' }}>
-              FAQ
-            </a>
-          </div>
-
-          {/* Tagline & Attribution */}
-          <div style={{ fontSize: '13px', color: '#71717A', fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span>Drop it. Pick it up. Let it disappear.</span>
-            <span style={{ fontSize: '12.5px', color: '#18181B', fontWeight: 700 }}>
+            <span style={{ color: '#A1A1AA' }}>•</span>
+            <span style={{ fontSize: '13px', color: '#18181B', fontWeight: 700 }}>
               Made by{' '}
               <a
                 href="https://github.com/idi01-git"
