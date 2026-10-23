@@ -1,33 +1,198 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Core Primary SEO Meta -->
+    <title>Droplet — Create a room. Drop anything. Pick it up anywhere.</title>
+    <meta
+      name="title"
+      content="Droplet — Create a room. Drop anything. Pick it up anywhere."
+    />
+    <meta
+      name="description"
+      content="Fast, private, temporary room-based sharing. Transfer text, snippets, links, and files between devices with an instant 4-digit code. Zero accounts, zero tracking. Disappears in 24 hours."
+    />
+    <meta
+      name="keywords"
+      content="file sharing, p2p transfer, temporary room, 4-digit code, air drop alternative, send files without login, ephemeral storage, zero account sharing, zip download, encrypted file transfer, web drop, fast file transfer"
+    />
+    <meta name="author" content="Droplet" />
+    <meta name="creator" content="shivang" />
+    <meta name="publisher" content="Droplet" />
+    <meta name="application-name" content="Droplet" />
+    <link rel="canonical" href="https://droplet.app/" />
+
+    <!-- Crawling & Indexing Directives -->
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
+    <meta name="revisit-after" content="7 days" />
+
+    <!-- GEO (Generative Engine Optimization) & Regional Metadata -->
+    <meta name="geo.region" content="US" />
+    <meta name="geo.placename" content="Global" />
+    <meta name="distribution" content="global" />
+    <meta name="rating" content="general" />
+
+    <!-- Icons & Manifest -->
     <link rel="icon" type="image/webp" href="/assets/Sq_Logo_Transparent.webp" />
     <link rel="alternate icon" type="image/png" href="/assets/Sq_Logo_Transparent.png" />
     <link rel="apple-touch-icon" href="/assets/Sq_Logo.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
     <meta name="theme-color" content="#FFE000" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Droplet — Create a room. Drop anything. Pick it up anywhere.</title>
-    <meta
-      name="description"
-      content="Fast, simple, temporary, account-free room-based sharing. Transfer text, snippets, links, and files between devices with a 4-digit code. Automatically disappears in 24 hours."
-    />
-    <!-- Open Graph & Twitter Social Cards -->
+    <meta name="msapplication-TileColor" content="#FFE000" />
+
+    <!-- Open Graph Social Protocol (Facebook, Discord, LinkedIn, Slack) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Droplet — Drop anything. Pick it up anywhere." />
-    <meta property="og:description" content="Fast, private peer-to-peer room sharing across devices without logins. Disappears in 24 hours." />
-    <meta property="og:image" content="/assets/Sq_Logo.png" />
+    <meta property="og:site_name" content="Droplet" />
+    <meta property="og:url" content="https://droplet.app/" />
+    <meta
+      property="og:title"
+      content="Droplet — Instant, Account-Free Ephemeral Room Sharing"
+    />
+    <meta
+      property="og:description"
+      content="Fast, private peer-to-peer room sharing across devices without logins. Transfer files, notes, and links with a 4-digit code. Automatically disappears in 24 hours."
+    />
+    <meta property="og:image" content="https://droplet.app/assets/hero_devices_scene.webp" />
+    <meta property="og:image:secure_url" content="https://droplet.app/assets/hero_devices_scene.webp" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Droplet - Instant temporary room-based sharing between mobile and desktop devices"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Droplet — Drop anything. Pick it up anywhere." />
-    <meta name="twitter:description" content="Instant temporary room-based transfer for student labs and borrowed devices." />
-    <meta name="twitter:image" content="/assets/Sq_Logo.png" />
+    <meta name="twitter:url" content="https://droplet.app/" />
+    <meta
+      name="twitter:title"
+      content="Droplet — Instant, Account-Free Ephemeral Room Sharing"
+    />
+    <meta
+      name="twitter:description"
+      content="Transfer files, commands, and notes between phones and laptops in seconds with a 4-digit code. No logins, no tracking. Disappears in 24 hours."
+    />
+    <meta name="twitter:image" content="https://droplet.app/assets/hero_devices_scene.webp" />
+    <meta
+      name="twitter:image:alt"
+      content="Droplet ephemeral file transfer interface"
+    />
+
     <!-- Typography: Fredoka for Playful Chunky Headings, Inter for Readable UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
+
+    <!-- =======================================================================
+         Structured Data (JSON-LD) for Search Engines & Generative AI Crawlers
+         ======================================================================= -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://droplet.app/#webapp",
+            "name": "Droplet",
+            "alternateName": "Droplet File Share",
+            "url": "https://droplet.app",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "All (Web Browser, Windows, macOS, Linux, iOS, Android)",
+            "description": "Fast, private, temporary room-based file and text sharing between devices with a 4-digit code. Zero accounts, zero tracking, and automatically self-destructs in 24 hours.",
+            "browserRequirements": "Requires JavaScript. Requires HTML5.",
+            "softwareVersion": "1.0.0",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "featureList": [
+              "Zero sign-up or login required",
+              "Instant 4-digit room code and QR code sharing",
+              "Real-time WebSocket sync across devices",
+              "Files up to 50 MiB with 200 MiB total room quota",
+              "One-click Download All (ZIP) archive",
+              "Automatic 24-hour room self-destruction",
+              "Brute-force protection and rate limiting"
+            ],
+            "author": {
+              "@type": "Person",
+              "name": "shivang",
+              "url": "https://github.com/idi01-git"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://droplet.app/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Do I need an account or email to use Droplet?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No! Droplet requires zero accounts, emails, or personal identification. You simply click 'Create a Room', get a 4-digit code, and share whatever you need."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How long do files and messages stay stored?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "All rooms and their contents automatically self-destruct exactly 24 hours after room creation. Files are completely removed from the server disk."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What is the maximum file size supported?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "You can upload individual files up to 50 MiB each, and up to 20 files (or 200 MiB total) per room. All major file formats (PDFs, images, archives, code) are supported."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I download all shared files together?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! Simply click the 'Download All (ZIP)' button inside any active room to download all uploaded files in a single compressed ZIP archive."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is Droplet private and secure?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Every device that joins receives a unique cryptographic bearer token. All traffic uses HTTPS/WSS encryption. Codes are checked in constant time and rate-limited against brute-force attacks."
+                }
+              }
+            ]
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://droplet.app/#organization",
+            "name": "Droplet",
+            "url": "https://droplet.app",
+            "logo": "https://droplet.app/assets/Sq_Logo.png",
+            "sameAs": [
+              "https://github.com/idi01-git/Droplet"
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,31 @@
+{
+  "name": "Droplet — Ephemeral Peer Sharing",
+  "short_name": "Droplet",
+  "description": "Fast, private, temporary file and text sharing between devices with a 4-digit code. Zero accounts, zero tracking. Disappears in 24 hours.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFDF0",
+  "theme_color": "#FFE000",
+  "orientation": "portrait-primary",
+  "categories": ["utilities", "productivity", "file sharing"],
+  "icons": [
+    {
+      "src": "/assets/Sq_Logo_Transparent.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/Sq_Logo_Transparent.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/droplet-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

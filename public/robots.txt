@@ -1,0 +1,54 @@
+# ==============================================================================
+# Droplet - Robots.txt
+# https://droplet.app
+# Ephemeral, Account-Free P2P Room File Sharing
+# ==============================================================================
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+# ------------------------------------------------------------------------------
+# Generative Engine Optimization (GEO) & AI Crawlers Explicit Permissions
+# ------------------------------------------------------------------------------
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /api/
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /api/
+
+# ------------------------------------------------------------------------------
+# Sitemap & LLM Knowledge Files
+# ------------------------------------------------------------------------------
+Sitemap: /sitemap.xml
+# LLMs knowledge standard for AI Search Engines & Agents
+# Learn more at https://llmstxt.org
+# llms.txt: /llms.txt
+# llms-full.txt: /llms-full.txt

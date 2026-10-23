@@ -179,7 +179,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   return (
-    <div style={{ position: 'relative', overflowX: 'hidden' }}>
+    <main id="main-content" style={{ position: 'relative', overflowX: 'hidden' }}>
       {/* =========================================================================
           HERO SECTION (Matching Mockup with 2-Column Neo-Brutalist Layout)
           ========================================================================= */}
@@ -1711,7 +1711,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 };
 

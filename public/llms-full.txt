@@ -1,0 +1,49 @@
+# Droplet — Full Technical Knowledge Specification
+
+## Overview
+Droplet is an open-source, ephemeral peer-to-peer file transfer and real-time text exchange web application. It eliminates login overhead and digital footprint by pairing devices via 4-digit numeric codes with an absolute 24-hour expiration lifecycle.
+
+## Technical Stack
+- **Frontend**: React 18, TypeScript 5, Vite 6, Vanilla CSS (Neo-brutalist custom design system)
+- **Backend**: Node.js, Express, WebSocket (`ws`), TypeScript (`tsx`)
+- **Database**: SQLite 3 via `better-sqlite3` (WAL mode, parameterized queries)
+- **Realtime**: Native WebSockets with heartbeat keep-alives and room-scoped broadcasts
+- **Storage**: Local filesystem storage with automatic file unlinking upon room deletion and expiration
+
+## Room Lifecycle and Security
+1. **Creation**:
+   - Generates a 4-digit code (0000–9999).
+   - Generates owner cryptographic bearer token (`droplet_...`).
+   - Computes bcrypt/sha-256 hash for database indexing.
+   - Sets `expires_at = created_at + 24 hours` (strictly non-extendable).
+2. **Joining**:
+   - Participant submits 4-digit code.
+   - Constant-time verification prevents timing attacks.
+   - Brute-force protection: IP-based tracking limits failed attempts. 5 failures trigger a 5-minute lockout (HTTP 429).
+3. **Session Management**:
+   - Each participant device gets a unique cryptographically random token.
+   - Role: `owner` or `participant`.
+4. **Self-Destruction**:
+   - Background cleanup worker runs every 60 seconds.
+   - Upon expiration or owner deletion, all database records (rooms, sessions, items, reservations) and all physical storage files are permanently expunged.
+
+## System Limits
+- Maximum file size: 50 MiB (52,428,800 bytes)
+- Maximum files per room: 20 files
+- Maximum room quota: 200 MiB (209,715,200 bytes)
+- Maximum text snippet size: 100 KiB (102,400 bytes)
+- Maximum concurrent upload reservations: 2 per room
+- Room lifetime: 24 hours (86,400,000 milliseconds)
+
+## REST API Specification
+- `POST /api/rooms` - Create room. Body: `{}`. Response: `{ success: true, data: { room: RoomSummary, sessionToken: string } }`
+- `POST /api/rooms/join` - Join room. Body: `{ code: string }`. Response: `{ success: true, data: { room: RoomSummary, sessionToken: string } }`
+- `GET /api/rooms/:roomId` - Header: `Authorization: Bearer <token>`. Response: `{ success: true, data: { room: RoomSummary, items: Item[] } }`
+- `DELETE /api/rooms/:roomId` - Owner only. Header: `Authorization: Bearer <token>`. Response: `{ success: true, data: { message: string } }`
+- `POST /api/rooms/:roomId/items` - Post note. Header: `Authorization: Bearer <token>`. Body: `{ text: string, type?: 'text' | 'link' }`
+- `DELETE /api/rooms/:roomId/items/:itemId` - Delete note/file (author or room owner only). Header: `Authorization: Bearer <token>`
+- `POST /api/rooms/:roomId/uploads/reserve` - Reserve upload. Body: `{ sizeBytes: number }`
+- `POST /api/rooms/:roomId/uploads` - Multipart form upload. Field: `file`, `reservationId`
+- `GET /api/rooms/:roomId/items/:itemId/download` - Stream individual file
+- `GET /api/rooms/:roomId/archive` - Stream all files bundled into a single ZIP archive
+- `GET /api/health` - System health and limits status
