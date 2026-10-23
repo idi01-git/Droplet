@@ -79,9 +79,8 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
 
   return (
     <div className={`nb-room-info-bar ${className}`}>
-      {/* Primary Tier: Leave, Room Code with Integrated Live Sync Dot, and Share */}
-      <div className="nb-room-bar-primary">
-        {/* Leave Room Action */}
+      {/* Left Cluster: Leave Action + Desktop Wifi + Divider + Room Code Badge */}
+      <div className="nb-room-bar-left">
         {onLeave && (
           <button
             onClick={onLeave}
@@ -89,8 +88,8 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
             title="Leave this room and return home"
             aria-label="Leave room"
           >
-            <ArrowLeftIcon size={14} />
-            <span>Leave</span>
+            <ArrowLeftIcon size={16} />
+            <span className="nb-room-btn-text">Leave</span>
           </button>
         )}
 
@@ -153,12 +152,23 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
                 color: '#00875A',
               }}
             >
-              <CheckCircleIcon size={13} /> Copied!
+              <CheckCircleIcon size={13} />
+              <span className="nb-room-btn-text">Copied!</span>
             </span>
           ) : (
             <CopyIcon size={13} style={{ opacity: 0.6 }} />
           )}
         </button>
+      </div>
+
+      {/* Right Cluster: Expiry Countdown + Share Button + Delete Room Danger Button */}
+      <div className="nb-room-bar-right">
+        {/* Expiry Countdown Chip */}
+        <div className="nb-room-expiry-chip" title={`Room expires in ${calculateRemaining()} (24h auto-expiry)`}>
+          <ClockIcon size={13} />
+          <span className="nb-room-expiry-prefix">Expires in </span>
+          <span>{calculateRemaining()}</span>
+        </div>
 
         {/* Unified Single Share Button (Opens modal with QR code & Copy Link) */}
         {(onShare || onShowQr) && (
@@ -168,22 +178,10 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
             aria-label="Share room"
             className="nb-button nb-room-btn-share"
           >
-            <ShareIcon size={14} />
-            <span>Share</span>
+            <ShareIcon size={15} />
+            <span className="nb-room-btn-text">Share</span>
           </button>
         )}
-      </div>
-
-      {/* Mobile Subtle Dashed Divider */}
-      <div className="nb-room-mobile-divider" aria-hidden="true" />
-
-      {/* Secondary Tier: Expiry Countdown + Delete Room Danger Action */}
-      <div className="nb-room-bar-secondary">
-        {/* Expiry Countdown */}
-        <div className="nb-room-expiry-chip">
-          <ClockIcon size={13} />
-          <span>Expires in {calculateRemaining()}</span>
-        </div>
 
         {/* Delete Room Button (Owner Only) */}
         {isOwner && onDelete && (
@@ -193,8 +191,8 @@ export const RoomInfoBar: React.FC<RoomInfoBarProps> = ({
             aria-label="Delete this room"
             className="nb-button nb-room-btn-delete"
           >
-            <TrashIcon size={13} />
-            <span>Delete Room</span>
+            <TrashIcon size={15} />
+            <span className="nb-room-btn-text">Delete Room</span>
           </button>
         )}
       </div>
