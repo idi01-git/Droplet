@@ -207,17 +207,7 @@ export const App: React.FC = () => {
 
       <main className={activeTab === 'home' ? undefined : 'nb-main-content'}>
         {activeTab === '404' ? (
-          <NotFoundView
-            onGoHome={handleGoHome}
-            onJoinRoom={() => {
-              handleGoHome();
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('droplet:open-join-room'));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }, 60);
-            }}
-            onCreateRoom={handleQuickCreate}
-          />
+          <NotFoundView onGoHome={handleGoHome} />
         ) : expiredReason ? (
           <ExpiredView
             reason={expiredReason}
