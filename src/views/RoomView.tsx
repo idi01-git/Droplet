@@ -39,7 +39,15 @@ export const RoomView: React.FC<RoomViewProps> = ({
       ? room.code
       : recentRoomsService.getRecentRooms().find((r) => r.id === room.id)?.code || room.code || '';
 
-  const { items, isConnected, postTextItem, deleteItem, error: syncError } = useRoomSync({
+  const {
+    items,
+    isConnected,
+    postTextItem,
+    addOptimisticItem,
+    deleteItem,
+    refreshSnapshot,
+    error: syncError,
+  } = useRoomSync({
     roomId: room.id,
     sessionToken,
     onRoomExpired: onExpired,
@@ -209,10 +217,12 @@ export const RoomView: React.FC<RoomViewProps> = ({
         setUploadProgress(0);
 
         try {
-          await api.uploadFile(room.id, sessionToken, file, (progress) => {
+          const uploadedItem = await api.uploadFile(room.id, sessionToken, file, (progress) => {
             const overall = Math.round(((i + progress / 100) / totalFiles) * 100);
             setUploadProgress(overall);
           });
+          // Immediately show file with delete button without needing a page refresh
+          addOptimisticItem({ ...uploadedItem, canDelete: true });
           successfulCount++;
         } catch (err: any) {
           failedFiles.push({ name: file.name, error: err.message || 'Upload failed' });
@@ -220,6 +230,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
       }
 
       if (successfulCount > 0) {
+        refreshSnapshot();
         try {
           confetti({
             particleCount: 35,
@@ -437,12 +448,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 <Button
                   size="sm"
                   variant="surface"
+                  className="nb-header-btn"
                   isLoading={isClearingNotes}
                   leftIcon={<EraserIcon size={14} />}
                   onClick={handleClearAllNotes}
                   title="Clear all shared notes from room"
                 >
-                  Clear Notes
+                  <span className="hide-on-mobile">Clear Notes</span>
                 </Button>
               )}
             </div>
@@ -493,12 +505,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
                   <Button
                     size="sm"
                     variant="surface"
+                    className="nb-header-btn"
                     isLoading={isDownloadingZip}
                     leftIcon={<ArchiveIcon size={14} />}
                     onClick={handleDownloadZip}
                     title="Download all files and notes as a ZIP"
                   >
-                    Download All (.zip)
+                    <span className="hide-on-mobile">Download All (.zip)</span>
                   </Button>
                 )}
               </div>

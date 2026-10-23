@@ -230,15 +230,19 @@ export class UploadService {
       downloadUrl: `/api/rooms/${roomId}/items/${itemId}/download`,
     };
 
-    // Broadcast new file to room in real time
-    realtimeService.broadcastToRoom(roomId, {
-      type: 'ITEM_ADDED',
+    // Broadcast new file to room in real time with author session ID
+    realtimeService.broadcastToRoom(
       roomId,
-      timestamp: now,
-      payload: { item: createdItem },
-    });
+      {
+        type: 'ITEM_ADDED',
+        roomId,
+        timestamp: now,
+        payload: { item: createdItem },
+      },
+      session.id
+    );
 
-    return createdItem;
+    return { ...createdItem, canDelete: true };
   }
 
   /**

@@ -114,10 +114,17 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired, onRoomDeleted
 
           if (roomEvent.type === 'ITEM_ADDED' && roomEvent.payload.item) {
             setItems((prev) => {
-              // Avoid duplicates
-              if (prev.some((i) => i.id === roomEvent.payload.item!.id)) return prev;
-              // Prepend newest item so it appears at top
-              return [roomEvent.payload.item!, ...prev];
+              const incoming = roomEvent.payload.item!;
+              const existingIndex = prev.findIndex((i) => i.id === incoming.id);
+              if (existingIndex >= 0) {
+                const updated = [...prev];
+                updated[existingIndex] = {
+                  ...incoming,
+                  canDelete: incoming.canDelete ?? updated[existingIndex].canDelete,
+                };
+                return updated;
+              }
+              return [incoming, ...prev];
             });
           } else if (roomEvent.type === 'ITEM_DELETED' && roomEvent.payload.itemId) {
             setItems((prev) => prev.filter((i) => i.id !== roomEvent.payload.itemId));
@@ -165,13 +172,23 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired, onRoomDeleted
     };
   }, [roomId, sessionToken, refreshSnapshot, handleRoomDeleted, handleRoomExpired]);
 
-  // Methods to post & delete items
+  // Methods to post, add & delete items
+  const addOptimisticItem = useCallback((item: Item) => {
+    setItems((prev) => {
+      const exists = prev.some((i) => i.id === item.id);
+      if (exists) {
+        return prev.map((i) => (i.id === item.id ? { ...i, ...item } : i));
+      }
+      return [item, ...prev];
+    });
+  }, []);
+
   const postTextItem = async (text: string, type?: 'text' | 'link') => {
     const res = await api.postTextItem(roomId, sessionToken, text, type);
     // Optimistically add item if not yet received via WS
     setItems((prev) => {
       if (prev.some((i) => i.id === res.item.id)) return prev;
-      return [...prev, res.item];
+      return [{ ...res.item, canDelete: true }, ...prev];
     });
     return res.item;
   };
@@ -187,6 +204,7 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired, onRoomDeleted
     isLoading,
     error,
     postTextItem,
+    addOptimisticItem,
     deleteItem,
     refreshSnapshot,
   };

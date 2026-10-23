@@ -132,7 +132,7 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
           }}
         >
           <DownloadIcon size={16} />
-          <span>GET</span>
+          <span className="hide-on-mobile">GET</span>
         </button>
 
         {canDelete && onDelete && (

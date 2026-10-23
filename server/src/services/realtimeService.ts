@@ -9,6 +9,7 @@ interface AuthenticatedSocket extends WebSocket {
   isAlive: boolean;
   roomId?: string;
   sessionId?: string;
+  role?: string;
 }
 
 class RealtimeService {
@@ -55,16 +56,19 @@ class RealtimeService {
         }
 
         this.wss?.handleUpgrade(request, socket, head, (ws) => {
-          this.wss?.emit('connection', ws, request, roomId, session.id);
+          this.wss?.emit('connection', ws, request, roomId, session.id, session.role);
         });
       }
     });
 
-    this.wss.on('connection', (ws: WebSocket, _request: unknown, roomId: string, sessionId: string) => {
-      const authWs = ws as AuthenticatedSocket;
-      authWs.isAlive = true;
-      authWs.roomId = roomId;
-      authWs.sessionId = sessionId;
+    this.wss.on(
+      'connection',
+      (ws: WebSocket, _request: unknown, roomId: string, sessionId: string, role?: string) => {
+        const authWs = ws as AuthenticatedSocket;
+        authWs.isAlive = true;
+        authWs.roomId = roomId;
+        authWs.sessionId = sessionId;
+        authWs.role = role;
 
       authWs.on('pong', () => {
         authWs.isAlive = true;
@@ -113,16 +117,33 @@ class RealtimeService {
 
   /**
    * Broadcast an event to all connected devices in a specific room.
+   * If authorSessionId is provided, tailored permissions (canDelete) are computed per connected socket.
    */
-  public broadcastToRoom(roomId: string, event: RoomEvent): void {
+  public broadcastToRoom(roomId: string, event: RoomEvent, authorSessionId?: string): void {
     const sockets = this.roomSockets.get(roomId);
     if (!sockets || sockets.size === 0) return;
 
-    const payloadString = JSON.stringify(event);
-
     sockets.forEach((ws) => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(payloadString);
+        if (event.type === 'ITEM_ADDED' && event.payload.item) {
+          const isAuthor = Boolean(authorSessionId && ws.sessionId === authorSessionId);
+          const isOwner = ws.role === 'owner';
+          const tailoredItem = {
+            ...event.payload.item,
+            canDelete: isOwner || isAuthor,
+          };
+          ws.send(
+            JSON.stringify({
+              ...event,
+              payload: {
+                ...event.payload,
+                item: tailoredItem,
+              },
+            })
+          );
+        } else {
+          ws.send(JSON.stringify(event));
+        }
       }
     });
   }

@@ -97,15 +97,19 @@ export class ItemService {
       createdAt: now,
     };
 
-    // Broadcast in real time to connected devices in the room
-    realtimeService.broadcastToRoom(roomId, {
-      type: 'ITEM_ADDED',
+    // Broadcast in real time to connected devices in the room with author session ID
+    realtimeService.broadcastToRoom(
       roomId,
-      timestamp: now,
-      payload: { item: createdItem },
-    });
+      {
+        type: 'ITEM_ADDED',
+        roomId,
+        timestamp: now,
+        payload: { item: createdItem },
+      },
+      session.id
+    );
 
-    return createdItem;
+    return { ...createdItem, canDelete: true };
   }
 
   /**

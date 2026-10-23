@@ -870,5 +870,18 @@ input, textarea {
   text-underline-offset: 3px;
 }
 
+/* Responsive visibility: hide labels on mobile viewports (< 640px) while keeping icons */
+@media (max-width: 640px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .nb-header-btn {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    min-width: 36px !important;
+    gap: 0 !important;
+  }
+}
+
 
 
