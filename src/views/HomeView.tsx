@@ -1194,10 +1194,27 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
             gap: '16px',
           }}
         >
-          {/* Brand + Description */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <DropletLogo size="sm" layout="horizontal" />
-            <span style={{ fontSize: '13px', color: '#71717A', fontWeight: 600 }}>
+          {/* Brand + Description (Strictly Single Row) */}
+          <div
+            className="nb-footer-brand-row"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              flexWrap: 'nowrap',
+              maxWidth: '100%',
+            }}
+          >
+            <DropletLogo size="sm" layout="horizontal" height={26} />
+            <span
+              style={{
+                fontSize: 'clamp(11px, 2.6vw, 13px)',
+                color: '#71717A',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
               — Temporary peer sharing without accounts.
             </span>
           </div>

@@ -789,4 +789,33 @@ input, textarea {
   }
 }
 
+/* Footer Brand Single-Row Rules */
+.nb-footer-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 480px) {
+  .nb-footer-brand-row {
+    gap: 6px !important;
+  }
+  .nb-footer-brand-row img {
+    height: 22px !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .nb-footer-brand-row {
+    gap: 4px !important;
+  }
+  .nb-footer-brand-row img {
+    height: 20px !important;
+    width: auto !important;
+  }
+}
+
 
