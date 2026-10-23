@@ -172,8 +172,8 @@ export class UploadService {
       );
     }
 
-    // 3. Save file to storage driver under opaque key
-    const objectKey = storageService.generateOpaqueKey();
+    // 3. Save file to storage driver under opaque key (tagged by size for hybrid storage)
+    const objectKey = storageService.generateOpaqueKey(actualBytes);
     try {
       await storageService.save(objectKey, fileBuffer);
     } catch (err) {

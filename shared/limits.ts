@@ -28,6 +28,9 @@ export const DROPLET_LIMITS = {
   /** Maximum file size: 50 MiB (52,428,800 bytes). */
   MAX_FILE_SIZE_BYTES: 50 * ONE_MIB,
 
+  /** Hybrid tier threshold: Files <= 5 MiB stay local; files > 5 MiB go to S3. */
+  HYBRID_S3_THRESHOLD_BYTES: 5 * ONE_MIB,
+
   /** Maximum total uploaded file bytes per room: 200 MiB (209,715,200 bytes). */
   MAX_ROOM_BYTES: 200 * ONE_MIB,
 

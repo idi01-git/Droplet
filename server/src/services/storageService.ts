@@ -9,6 +9,7 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
+import { DROPLET_LIMITS } from '../../../shared/limits';
 
 export interface StorageDriver {
   saveFile(key: string, buffer: Buffer): Promise<void>;
@@ -46,7 +47,7 @@ export class LocalStorageDriver implements StorageDriver {
   public getFileStream(key: string): Readable {
     const filePath = this.getFilePath(key);
     if (!fs.existsSync(filePath)) {
-      throw new Error(`File with key ${key} not found in storage.`);
+      throw new Error(`File with key ${key} not found in local storage.`);
     }
     return fs.createReadStream(filePath);
   }
@@ -54,7 +55,7 @@ export class LocalStorageDriver implements StorageDriver {
   public async getFileBuffer(key: string): Promise<Buffer> {
     const filePath = this.getFilePath(key);
     if (!fs.existsSync(filePath)) {
-      throw new Error(`File with key ${key} not found in storage.`);
+      throw new Error(`File with key ${key} not found in local storage.`);
     }
     return fs.promises.readFile(filePath);
   }
@@ -80,7 +81,7 @@ export class LocalStorageDriver implements StorageDriver {
 }
 
 /**
- * AWS S3 & S3-Compatible (Cloudflare R2, MinIO, Backblaze) Storage Driver
+ * AWS S3 Storage Driver
  */
 export class S3StorageDriver implements StorageDriver {
   private client: S3Client;
@@ -183,13 +184,112 @@ export class S3StorageDriver implements StorageDriver {
   }
 }
 
+/**
+ * Hybrid Tiered Storage Driver:
+ * - Small files (<= 5 MiB) are saved directly to local disk (0 S3 cost).
+ * - Large files (> 5 MiB) are pushed to AWS S3.
+ */
+export class HybridStorageDriver implements StorageDriver {
+  private localDriver: LocalStorageDriver;
+  private s3Driver: S3StorageDriver;
+  private thresholdBytes: number;
+
+  constructor(thresholdBytes = DROPLET_LIMITS.HYBRID_S3_THRESHOLD_BYTES) {
+    this.localDriver = new LocalStorageDriver();
+    this.s3Driver = new S3StorageDriver();
+    this.thresholdBytes = thresholdBytes;
+  }
+
+  private isS3Key(key: string): boolean {
+    return key.startsWith('s3_');
+  }
+
+  private isLocalKey(key: string): boolean {
+    return key.startsWith('loc_');
+  }
+
+  public async saveFile(key: string, buffer: Buffer): Promise<void> {
+    if (this.isS3Key(key) || (!this.isLocalKey(key) && buffer.length > this.thresholdBytes)) {
+      await this.s3Driver.saveFile(key, buffer);
+    } else {
+      await this.localDriver.saveFile(key, buffer);
+    }
+  }
+
+  public async getFileStream(key: string): Promise<Readable> {
+    if (this.isS3Key(key)) {
+      return this.s3Driver.getFileStream(key);
+    }
+    if (this.isLocalKey(key)) {
+      return this.localDriver.getFileStream(key);
+    }
+    if (this.localDriver.fileExists(key)) {
+      return this.localDriver.getFileStream(key);
+    }
+    return this.s3Driver.getFileStream(key);
+  }
+
+  public async getFileBuffer(key: string): Promise<Buffer> {
+    if (this.isS3Key(key)) {
+      return this.s3Driver.getFileBuffer(key);
+    }
+    if (this.isLocalKey(key)) {
+      return this.localDriver.getFileBuffer(key);
+    }
+    if (this.localDriver.fileExists(key)) {
+      return this.localDriver.getFileBuffer(key);
+    }
+    return this.s3Driver.getFileBuffer(key);
+  }
+
+  public async deleteFile(key: string): Promise<void> {
+    if (this.isS3Key(key)) {
+      await this.s3Driver.deleteFile(key);
+      return;
+    }
+    if (this.isLocalKey(key)) {
+      await this.localDriver.deleteFile(key);
+      return;
+    }
+    // Untagged key: safely attempt cleanup from both
+    await this.localDriver.deleteFile(key);
+    await this.s3Driver.deleteFile(key);
+  }
+
+  public async fileExists(key: string): Promise<boolean> {
+    if (this.isS3Key(key)) {
+      return this.s3Driver.fileExists(key);
+    }
+    if (this.isLocalKey(key)) {
+      return this.localDriver.fileExists(key);
+    }
+    if (this.localDriver.fileExists(key)) {
+      return true;
+    }
+    return this.s3Driver.fileExists(key);
+  }
+
+  public async getFileSizeBytes(key: string): Promise<number> {
+    if (this.isS3Key(key)) {
+      return this.s3Driver.getFileSizeBytes(key);
+    }
+    if (this.isLocalKey(key)) {
+      return this.localDriver.getFileSizeBytes(key);
+    }
+    if (this.localDriver.fileExists(key)) {
+      return this.localDriver.getFileSizeBytes(key);
+    }
+    return this.s3Driver.getFileSizeBytes(key);
+  }
+}
+
 class StorageService {
   private driver: StorageDriver;
 
   constructor() {
     const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
-    if (driverType === 's3' || driverType === 'r2') {
-      this.driver = new S3StorageDriver();
+    if (driverType === 's3' || driverType === 'hybrid') {
+      this.driver = new HybridStorageDriver();
     } else {
       this.driver = new LocalStorageDriver();
     }
@@ -199,8 +299,22 @@ class StorageService {
     this.driver = driver;
   }
 
-  public generateOpaqueKey(): string {
-    return uuidv4();
+  /**
+   * Generate an opaque object key.
+   * If size is provided and storage driver is S3/hybrid, prefix with 'loc_' (<= 5MB) or 's3_' (> 5MB).
+   */
+  public generateOpaqueKey(sizeBytes?: number): string {
+    const id = uuidv4();
+    const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
+
+    if (driverType === 's3' || driverType === 'hybrid') {
+      if (typeof sizeBytes === 'number' && sizeBytes <= DROPLET_LIMITS.HYBRID_S3_THRESHOLD_BYTES) {
+        return `loc_${id}`;
+      }
+      return `s3_${id}`;
+    }
+
+    return `loc_${id}`;
   }
 
   public async save(key: string, buffer: Buffer): Promise<void> {
