@@ -323,302 +323,150 @@ export const HomeView: React.FC<HomeViewProps> = ({ onRoomJoined, initialCode = 
               . No account. No hassle. Just drop it.
             </p>
 
-            {/* 4. Action Buttons (Create a Room & Join a Room) */}
-            <div
-              className="hero-cta-group"
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: '14px',
-                marginBottom: '0',
-                width: '100%',
-              }}
-            >
-              {/* Primary CTA: Create a Room */}
-              <button
-                onClick={handleCreateRoom}
-                disabled={isCreating}
-                className="nb-button"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  backgroundColor: '#FFE000',
-                  border: '2.5px solid #000000',
-                  borderRadius: '14px',
-                  boxShadow: '4px 4px 0px #000000',
-                  padding: '13px 28px',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 900,
-                  fontSize: '17px',
-                  color: '#000000',
-                  cursor: isCreating ? 'not-allowed' : 'pointer',
-                  opacity: isCreating ? 0.8 : 1,
-                  transition: 'all 0.12s ease',
-                }}
-              >
-                <span>{isCreating ? 'Creating Room...' : 'Create a Room'}</span>
-                <ArrowRightIcon size={18} />
-              </button>
-
-              {/* Secondary CTA: Join a Room */}
-              <button
-                onClick={() => setShowJoinModal(true)}
-                className="nb-button"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  backgroundColor: '#FFFFFF',
-                  border: '2.5px solid #000000',
-                  borderRadius: '14px',
-                  boxShadow: '4px 4px 0px #000000',
-                  padding: '13px 24px',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 900,
-                  fontSize: '17px',
-                  color: '#000000',
-                  cursor: 'pointer',
-                  transition: 'all 0.12s ease',
-                }}
-              >
-                <QrCodeIcon size={20} />
-                <span>Join a Room</span>
-              </button>
-            </div>
-
-            {/* Discreet Recent Active Rooms Quick Access - No # symbol, strictly valid 4 digits */}
-            {recentRooms.filter((r) => r.code && /^\d{4}$/.test(r.code.trim())).length > 0 && (
+            {/* 4. Action Buttons & Micro-Features Group (Anchored to Bottom on Mobile) */}
+            <div className="hero-bottom-actions" style={{ width: '100%', marginTop: 'auto' }}>
               <div
-                className="hero-active-rooms"
+                className="hero-cta-group"
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
                   flexWrap: 'wrap',
-                  gap: '8px',
-                  marginTop: '14px',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-display)',
-                  color: '#52525B',
-                }}
-              >
-                <span style={{ fontWeight: 800, color: '#18181B', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Your Active Rooms:
-                </span>
-                {recentRooms
-                  .filter((r) => r.code && /^\d{4}$/.test(r.code.trim()))
-                  .map((r) => (
-                    <button
-                      key={r.code}
-                      onClick={() => handleOpenCreatedRoom(r)}
-                      title={`Reopen your room ${r.code}`}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        backgroundColor: '#FFFFFF',
-                        border: '1.5px solid #000000',
-                        borderRadius: '6px',
-                        padding: '3px 9px',
-                        fontSize: '12px',
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 800,
-                        color: '#000000',
-                        boxShadow: '1.5px 1.5px 0px #000000',
-                        cursor: 'pointer',
-                        transition: 'transform 0.1s ease, background-color 0.1s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FFE000';
-                        e.currentTarget.style.transform = 'translate(-1px, -1px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FFFFFF';
-                        e.currentTarget.style.transform = 'none';
-                      }}
-                    >
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00D084', display: 'inline-block' }} />
-                      <span>{r.code}</span>
-                    </button>
-                  ))}
-              </div>
-            )}
-
-            {/* 5. Features Strip */}
-            <div
-              className="nb-features-grid"
-              style={{
-                width: '100%',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                alignItems: 'stretch',
-                marginTop: 'clamp(65px, 9vh, 90px)',
-                padding: 0,
-                transform: 'translateX(-48px)',
-              }}
-            >
-              {/* Feature 1: Instant Transfer */}
-              <div
-                className="nb-feature-cell"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  textAlign: 'center',
-                  padding: '0 10px',
-                  borderRight: '1.5px solid rgba(0, 0, 0, 0.18)',
+                  gap: '12px',
+                  marginBottom: '0',
+                  width: '100%',
                 }}
               >
-                <div
-                  className="nb-feature-icon-wrapper nb-feature-icon-zap"
+                {/* Primary CTA: Create a Room */}
+                <button
+                  onClick={handleCreateRoom}
+                  disabled={isCreating}
+                  className="nb-button"
                   style={{
-                    marginBottom: '8px',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                  }}
-                >
-                  <ZapIcon size={30} />
-                </div>
-                <span
-                  style={{
+                    gap: '10px',
+                    backgroundColor: '#FFE000',
+                    border: '2.5px solid #000000',
+                    borderRadius: '14px',
+                    boxShadow: '4px 4px 0px #000000',
+                    padding: '13px 28px',
                     fontFamily: 'var(--font-display)',
-                    fontWeight: 800,
-                    fontSize: 'clamp(12px, 1.1vw, 13.5px)',
-                    lineHeight: 1.25,
+                    fontWeight: 900,
+                    fontSize: '17px',
                     color: '#000000',
-                    textAlign: 'center',
-                    margin: 0,
-                    padding: 0,
+                    cursor: isCreating ? 'not-allowed' : 'pointer',
+                    opacity: isCreating ? 0.8 : 1,
+                    transition: 'all 0.12s ease',
                   }}
                 >
-                  Instant<br />Transfer
-                </span>
+                  <span>{isCreating ? 'Creating Room...' : 'Create a Room'}</span>
+                  <ArrowRightIcon size={18} />
+                </button>
+
+                {/* Secondary CTA: Join a Room */}
+                <button
+                  onClick={() => setShowJoinModal(true)}
+                  className="nb-button"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: '#FFFFFF',
+                    border: '2.5px solid #000000',
+                    borderRadius: '14px',
+                    boxShadow: '4px 4px 0px #000000',
+                    padding: '13px 24px',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 900,
+                    fontSize: '17px',
+                    color: '#000000',
+                    cursor: 'pointer',
+                    transition: 'all 0.12s ease',
+                  }}
+                >
+                  <QrCodeIcon size={20} />
+                  <span>Join a Room</span>
+                </button>
               </div>
 
-              {/* Feature 2: End-to-End Private */}
-              <div
-                className="nb-feature-cell"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  textAlign: 'center',
-                  padding: '0 10px',
-                  borderRight: '1.5px solid rgba(0, 0, 0, 0.18)',
-                }}
-              >
+              {/* Discreet Recent Active Rooms Quick Access - No # symbol, strictly valid 4 digits */}
+              {recentRooms.filter((r) => r.code && /^\d{4}$/.test(r.code.trim())).length > 0 && (
                 <div
-                  className="nb-feature-icon-wrapper nb-feature-icon-shield"
+                  className="hero-active-rooms"
                   style={{
-                    marginBottom: '8px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                  }}
-                >
-                  <ShieldIcon size={30} />
-                </div>
-                <span
-                  style={{
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    marginTop: '12px',
+                    fontSize: '12px',
                     fontFamily: 'var(--font-display)',
-                    fontWeight: 800,
-                    fontSize: 'clamp(12px, 1.1vw, 13.5px)',
-                    lineHeight: 1.25,
-                    color: '#000000',
-                    textAlign: 'center',
-                    margin: 0,
-                    padding: 0,
+                    color: '#52525B',
                   }}
                 >
-                  End-to-End<br />Private
-                </span>
-              </div>
+                  <span style={{ fontWeight: 800, color: '#18181B', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Your Active Rooms:
+                  </span>
+                  {recentRooms
+                    .filter((r) => r.code && /^\d{4}$/.test(r.code.trim()))
+                    .map((r) => (
+                      <button
+                        key={r.code}
+                        onClick={() => handleOpenCreatedRoom(r)}
+                        title={`Reopen your room ${r.code}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          backgroundColor: '#FFFFFF',
+                          border: '1.5px solid #000000',
+                          borderRadius: '6px',
+                          padding: '3px 9px',
+                          fontSize: '12px',
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 800,
+                          color: '#000000',
+                          boxShadow: '1.5px 1.5px 0px #000000',
+                          cursor: 'pointer',
+                          transition: 'transform 0.1s ease, background-color 0.1s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#FFE000';
+                          e.currentTarget.style.transform = 'translate(-1px, -1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#FFFFFF';
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00D084', display: 'inline-block' }} />
+                        <span>{r.code}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
 
-              {/* Feature 3: Auto Expires in 24 Hours */}
-              <div
-                className="nb-feature-cell"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  textAlign: 'center',
-                  padding: '0 10px',
-                  borderRight: '1.5px solid rgba(0, 0, 0, 0.18)',
-                }}
-              >
-                <div
-                  className="nb-feature-icon-wrapper nb-feature-icon-clock"
-                  style={{
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                  }}
-                >
-                  <ClockIcon size={30} />
+              {/* 5. Feature Strip - In Very Small Manner Just Below Buttons */}
+              <div className="nb-features-micro-strip">
+                <div className="nb-micro-feature">
+                  <ZapIcon size={13} color="#000000" />
+                  <span>Instant Transfer</span>
                 </div>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 800,
-                    fontSize: 'clamp(12px, 1.1vw, 13.5px)',
-                    lineHeight: 1.25,
-                    color: '#000000',
-                    textAlign: 'center',
-                    margin: 0,
-                    padding: 0,
-                  }}
-                >
-                  Auto Expires<br />in 24 Hours
-                </span>
-              </div>
-
-              {/* Feature 4: Download Single or ZIP (Clean & proportional with other 3 features) */}
-              <div
-                className="nb-feature-cell"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  textAlign: 'center',
-                  padding: '0 10px',
-                }}
-              >
-                <div
-                  className="nb-feature-icon-wrapper nb-feature-icon-download"
-                  style={{
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                  }}
-                >
-                  <DownloadIcon size={30} />
+                <div className="nb-micro-divider" aria-hidden="true">•</div>
+                <div className="nb-micro-feature">
+                  <ShieldIcon size={13} color="#000000" />
+                  <span>End-to-End Private</span>
                 </div>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 800,
-                    fontSize: 'clamp(12px, 1.1vw, 13.5px)',
-                    lineHeight: 1.25,
-                    color: '#000000',
-                    textAlign: 'center',
-                    margin: 0,
-                    padding: 0,
-                  }}
-                >
-                  Download<br />Single or ZIP
-                </span>
+                <div className="nb-micro-divider" aria-hidden="true">•</div>
+                <div className="nb-micro-feature">
+                  <ClockIcon size={13} color="#000000" />
+                  <span>24h Auto-Expiry</span>
+                </div>
+                <div className="nb-micro-divider" aria-hidden="true">•</div>
+                <div className="nb-micro-feature">
+                  <DownloadIcon size={13} color="#000000" />
+                  <span>Single or ZIP</span>
+                </div>
               </div>
             </div>
           </div>
