@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
@@ -288,7 +289,9 @@ class StorageService {
 
   constructor() {
     const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
-    if (driverType === 's3' || driverType === 'hybrid') {
+    if (process.env.NODE_ENV === 'test' && !process.env.TEST_STORAGE_DRIVER) {
+      this.driver = new LocalStorageDriver();
+    } else if (driverType === 's3' || driverType === 'hybrid') {
       this.driver = new HybridStorageDriver();
     } else {
       this.driver = new LocalStorageDriver();
@@ -305,6 +308,9 @@ class StorageService {
    */
   public generateOpaqueKey(sizeBytes?: number): string {
     const id = uuidv4();
+    if (process.env.NODE_ENV === 'test' && !process.env.TEST_STORAGE_DRIVER) {
+      return `loc_${id}`;
+    }
     const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
 
     if (driverType === 's3' || driverType === 'hybrid') {
