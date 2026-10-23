@@ -43,6 +43,7 @@ export interface Item {
   mimeType?: string;
   createdAt: number;
   downloadUrl?: string;
+  canDelete?: boolean;
 }
 
 export interface UploadReservation {

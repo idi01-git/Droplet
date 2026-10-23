@@ -169,16 +169,29 @@ export class RoomService {
       throw new AppError('ROOM_EXPIRED', 'Room has expired and is no longer accessible.', 410);
     }
 
-    // Fetch items
+    // Fetch items with permission check for deletion
     const itemRows = db
       .prepare(
-        `SELECT id, room_id as roomId, type, text_content as textContent, 
+        `SELECT id, room_id as roomId, session_id as sessionId, type, text_content as textContent, 
                 filename, size_bytes as sizeBytes, mime_type as mimeType, created_at as createdAt
          FROM items 
          WHERE room_id = ? 
          ORDER BY created_at DESC`
       )
-      .all(roomId) as Item[];
+      .all(roomId) as (Item & { sessionId: string })[];
+
+    const isOwner = session.role === 'owner';
+    const items: Item[] = itemRows.map((row) => ({
+      id: row.id,
+      roomId: row.roomId,
+      type: row.type,
+      textContent: row.textContent,
+      filename: row.filename,
+      sizeBytes: row.sizeBytes,
+      mimeType: row.mimeType,
+      createdAt: row.createdAt,
+      canDelete: isOwner || row.sessionId === session.id,
+    }));
 
     const roomSummary: RoomSummary = {
       id: roomRow.id,
@@ -189,11 +202,11 @@ export class RoomService {
       usedBytes: roomRow.usedBytes,
       reservedBytes: roomRow.reservedBytes,
       fileCount: roomRow.fileCount,
-      isOwner: session.role === 'owner',
+      isOwner,
       timeRemainingMs: Math.max(0, roomRow.expiresAt - now),
     };
 
-    return { room: roomSummary, items: itemRows };
+    return { room: roomSummary, items };
   }
 
   /**

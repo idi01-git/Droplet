@@ -26,9 +26,6 @@ export const RoomCodeInput: React.FC<RoomCodeInputProps> = ({
     // Only accept numeric digits up to 4 characters
     const numeric = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
     onChange(numeric);
-    if (numeric.length === 4 && onSubmit) {
-      onSubmit(numeric);
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

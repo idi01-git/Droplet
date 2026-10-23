@@ -464,7 +464,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                     isLink={item.type === 'link'}
                     type={item.type === 'link' ? 'link' : undefined}
                     timestamp={item.createdAt}
-                    canDelete={true}
+                    canDelete={item.canDelete ?? room.isOwner}
                     onDelete={() => deleteItem(item.id)}
                   />
                 ))}
@@ -550,7 +550,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                     sizeBytes={file.sizeBytes}
                     mimeType={file.mimeType}
                     onDownload={() => handleFileDownload(file)}
-                    canDelete={true}
+                    canDelete={file.canDelete ?? room.isOwner}
                     onDelete={() => deleteItem(file.id)}
                   />
                 ))}
