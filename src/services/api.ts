@@ -130,20 +130,70 @@ class ApiClient {
       body: JSON.stringify({
         filename: file.name,
         sizeBytes: file.size,
-        mimeType: file.type,
+        mimeType: file.type || 'application/octet-stream',
       }),
     });
 
-    const initJson: ApiResponse<{ uploadId: string; maxBytes: number; uploadUrl: string }> =
+    const initJson: ApiResponse<{ uploadId: string; maxBytes: number; uploadUrl: string; isDirectS3?: boolean }> =
       await initRes.json();
 
     if (!initRes.ok || !initJson.success || !initJson.data) {
       throw new Error(initJson.error?.message || 'Failed to initiate upload.');
     }
 
-    const { uploadId } = initJson.data;
+    const { uploadId, uploadUrl, isDirectS3 } = initJson.data;
 
-    // Phase 2: Complete upload via XMLHttpRequest for accurate progress events
+    // Case A: Direct AWS S3 Upload via Pre-signed PUT URL (ZERO Node server RAM/bandwidth)
+    if (isDirectS3 && uploadUrl.startsWith('http')) {
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+        if (xhr.upload && onProgress) {
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percentage = Math.round((event.loaded / event.total) * 100);
+              onProgress(percentage);
+            }
+          };
+        }
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Direct S3 upload failed with status ${xhr.status}.`));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error('Network error during S3 direct upload.'));
+        };
+
+        xhr.send(file);
+      });
+
+      // Confirm upload with server without sending the file payload
+      const completeRes = await fetch(`${BASE_URL}/rooms/${roomId}/uploads/${uploadId}/complete`, {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify({
+          filename: file.name,
+          sizeBytes: file.size,
+          mimeType: file.type || 'application/octet-stream',
+        }),
+      });
+
+      const completeJson: ApiResponse<{ item: Item }> = await completeRes.json();
+      if (!completeRes.ok || !completeJson.success || !completeJson.data) {
+        throw new Error(completeJson.error?.message || 'Failed to confirm upload.');
+      }
+
+      return completeJson.data.item;
+    }
+
+    // Case B: Fallback (Local Storage Driver / test environment): Multipart upload through Express
     return new Promise<Item>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${BASE_URL}/rooms/${roomId}/uploads/${uploadId}/complete`);
@@ -182,9 +232,36 @@ class ApiClient {
   }
 
   /**
-   * Download an authorized file directly to the user's browser
+   * Download an authorized file. Uses short-lived pre-signed S3 URL if available,
+   * completely offloading file bandwidth and memory from the server.
    */
   async downloadFile(roomId: string, itemId: string, token: string, filename: string): Promise<void> {
+    try {
+      const urlRes = await fetch(`${BASE_URL}/rooms/${roomId}/items/${itemId}/download-url`, {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      });
+
+      if (urlRes.ok) {
+        const urlJson: ApiResponse<{ url: string; isDirect: boolean }> = await urlRes.json();
+        if (urlJson.success && urlJson.data) {
+          if (urlJson.data.isDirect) {
+            // Direct download from AWS S3 pre-signed URL (zero server RAM/bandwidth!)
+            const a = document.createElement('a');
+            a.href = urlJson.data.url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            return;
+          }
+        }
+      }
+    } catch {
+      // Fall through to streaming endpoint
+    }
+
+    // Fallback: Stream directly through Node server (local driver / tests)
     const res = await fetch(`${BASE_URL}/rooms/${roomId}/items/${itemId}/download`, {
       method: 'GET',
       headers: this.getHeaders(token),

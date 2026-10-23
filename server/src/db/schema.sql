@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS upload_reservations (
     created_at INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,
     status TEXT NOT NULL CHECK(status IN ('pending', 'completed', 'cancelled', 'timed_out')),
+    object_key TEXT,
+    filename TEXT,
+    mime_type TEXT,
     FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE,
     FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE
 );

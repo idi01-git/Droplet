@@ -159,6 +159,65 @@ export class ItemService {
   }
 
   /**
+   * Get an authorized short-lived pre-signed download URL (60s TTL).
+   * Direct from AWS S3 (zero server RAM or bandwidth consumed).
+   */
+  public static async getFileDownloadUrl(
+    roomId: string,
+    itemId: string,
+    _session: RoomSession
+  ): Promise<{ url: string; isDirect: boolean; filename: string; sizeBytes: number; mimeType: string }> {
+    const db = getDatabase();
+
+    const item = db
+      .prepare(
+        `SELECT id, room_id as roomId, object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, type 
+         FROM items 
+         WHERE id = ? AND room_id = ? AND type = 'file'`
+      )
+      .get(itemId, roomId) as {
+        id: string;
+        roomId: string;
+        objectKey: string;
+        filename: string;
+        sizeBytes: number;
+        mimeType: string;
+        type: string;
+      } | undefined;
+
+    if (!item) {
+      throw new AppError('INVALID_PAYLOAD', 'File not found in this room.', 404);
+    }
+
+    const safeFilename = sanitizeFilename(item.filename || 'download');
+
+    if (item.objectKey) {
+      const presigned = await storageService.getPresignedDownloadUrl(
+        item.objectKey,
+        safeFilename,
+        DROPLET_LIMITS.S3_PRESIGNED_DOWNLOAD_TTL_SECONDS
+      );
+      if (presigned) {
+        return {
+          url: presigned,
+          isDirect: true,
+          filename: safeFilename,
+          sizeBytes: item.sizeBytes,
+          mimeType: item.mimeType || 'application/octet-stream',
+        };
+      }
+    }
+
+    return {
+      url: `/api/rooms/${roomId}/items/${itemId}/download`,
+      isDirect: false,
+      filename: safeFilename,
+      sizeBytes: item.sizeBytes,
+      mimeType: item.mimeType || 'application/octet-stream',
+    };
+  }
+
+  /**
    * Delete an item (authorized for author or room owner).
    */
   public static async deleteItem(roomId: string, itemId: string, session: RoomSession): Promise<void> {

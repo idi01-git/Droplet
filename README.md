@@ -53,41 +53,43 @@ Users simply open a room, share a memorable **4-digit numeric code** (or QR code
 
 ---
 
-## 🏗️ Architecture & Tiered Storage
+## 🏗️ Architecture & Direct-to-S3 Pre-Signed Transfers
 
-Droplet utilizes a high-performance **hybrid architecture** that balances low operating cost, zero memory leaks, and high throughput:
+Droplet utilizes a high-performance **hybrid architecture with short-lived pre-signed S3 URLs** that guarantees zero memory exhaustion and zero server bandwidth bottlenecks:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                              CLIENT TIER                                │
 │          React 18 + TypeScript + Vite + Vanilla CSS Neo-Brutalist       │
-└──────────────────┬─────────────────────────────────┬───────────────────┘
-                   │ HTTPS REST API                  │ WSS Realtime Sync
-                   ▼                                 ▼
+└────────┬───────────────────────────────┬───────────────────────────────┘
+         │ HTTPS REST API                │ WSS Realtime Sync
+         ▼                               ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                              SERVER TIER                                │
 │                     Node.js + Express (Render.com)                      │
 │                                                                        │
 │  • SQLite (WAL mode): Rooms, sessions, text items, quotas, rate limits  │
+│  • S3 Presigner: Generates 15m PUT upload & 60s GET download tickets    │
 │  • Background Worker: 60s periodic expiry & orphan cleaner             │
 │  • WebSocket Hub: Broadcasts real-time events to room peers            │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-                                   │ S3 SDK Streaming
-                                   ▼
+└────────┬───────────────────────────────────────────────────────────────┘
+         │
+         │ Direct Pre-Signed Transfer (Zero Node Server RAM/Bandwidth!)
+         ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                             STORAGE TIER                                │
 │                       AWS S3 / Cloudflare R2                            │
 │                                                                        │
-│  • Bucket: droplet-s3-idi01 (ap-south-1)                               │
-│  • Streaming Uploads / Downloads (No memory buffering)                 │
+│  • Direct Browser PUT/GET via Short-Lived Pre-Signed URLs              │
+│  • 15-Minute Ephemeral Upload Tickets & 60-Second Download Expirations │
 │  • Lifecycle Rule: 48-Hour Automatic S3 Purge (Zero maintenance)      │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Why Tiered Storage?
-- **Render RAM Safety:** Render's free tier provides 512 MB RAM. Streaming multi-megabyte files directly through server memory would cause Out-Of-Memory (OOM) fatal crashes under concurrent traffic. By piping files directly to S3, server RAM usage stays flat (< 45 MB).
-- **Cost Minimization:** Text notes and links stay in SQLite on Render with zero S3 API charges. Only binary files reach S3, where storage is billed at $0.023/GB/month and auto-purged every 48 hours.
+### Why Short-Lived Pre-Signed S3 URLs?
+- **Render RAM Immunity (Zero OOM Crashes):** Render's free tier provides 512 MB RAM. If multiple users upload 30–50 MB files simultaneously through server memory, the Node process crashes with an Out-Of-Memory (OOM) kill (`Error 137`). With **pre-signed S3 URLs**, binary payloads flow directly between the client's browser and AWS S3 edges. The Node server consumes **< 1 KB of RAM** per transaction.
+- **Instant Revocation Protection:** Download tickets are strictly bounded to **60 seconds (`S3_PRESIGNED_DOWNLOAD_TTL_SECONDS = 60`)**. When a room expires or is deleted by the owner, access is instantly revoked in SQLite.
+- **Zero Server Bandwidth Billing:** 100% of binary file transfer bandwidth is offloaded directly to AWS Cloud Storage, keeping server compute costs minimal.
 
 ---
 
@@ -246,6 +248,42 @@ COPY . .
 RUN npm run build
 EXPOSE 3001
 CMD ["npm", "start"]
+```
+
+---
+
+## ☁️ AWS S3 Bucket CORS Configuration
+
+Since Droplet uses **direct-to-S3 pre-signed URLs**, your S3 bucket must permit HTTP `PUT` and `GET` requests from your frontend domain.
+
+In the **AWS S3 Console** -> Your Bucket -> **Permissions** -> **Cross-origin resource sharing (CORS)**, paste:
+
+```json
+[
+  {
+    "AllowedHeaders": [
+      "*"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "PUT",
+      "HEAD"
+    ],
+    "AllowedOrigins": [
+      "https://*.onrender.com",
+      "https://yourdomain.com",
+      "http://localhost:5173",
+      "http://localhost:3001"
+    ],
+    "ExposeHeaders": [
+      "ETag",
+      "Content-Length",
+      "Content-Type",
+      "Content-Disposition"
+    ],
+    "MaxAgeSeconds": 3600
+  }
+]
 ```
 
 ---

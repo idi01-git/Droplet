@@ -12,13 +12,13 @@ export class UploadService {
    * Phase 1: Atomically check room quotas and reserve upload capacity.
    * Spec Section 4.3: Reserve room capacity atomically before accepting concurrent uploads.
    */
-  public static initiateUpload(
+  public static async initiateUpload(
     roomId: string,
     session: RoomSession,
-    _filename: string,
+    filename: string,
     expectedBytes: number,
-    _mimeType?: string
-  ): { uploadId: string; maxBytes: number; uploadUrl: string } {
+    mimeType?: string
+  ): Promise<{ uploadId: string; maxBytes: number; uploadUrl: string; isDirectS3?: boolean }> {
     if (!expectedBytes || expectedBytes <= 0) {
       throw new AppError('INVALID_PAYLOAD', 'File size must be greater than 0 bytes.', 400);
     }
@@ -36,6 +36,16 @@ export class UploadService {
     const now = Date.now();
     const uploadId = uuidv4();
     const reservationExpiry = now + DROPLET_LIMITS.UPLOAD_RESERVATION_TIMEOUT_MS;
+    const cleanFilename = sanitizeFilename(filename || 'uploaded-file');
+
+    // Generate opaque key and check if storage driver provides direct S3 pre-signed upload URL
+    const objectKey = storageService.generateOpaqueKey(expectedBytes);
+    const presignedUrl = await storageService.getPresignedUploadUrl(
+      objectKey,
+      mimeType,
+      DROPLET_LIMITS.S3_PRESIGNED_UPLOAD_TTL_SECONDS
+    );
+    const isDirectS3 = Boolean(presignedUrl);
 
     const reserveTransaction = db.transaction(() => {
       // 1. Lock and read room state
@@ -108,9 +118,9 @@ export class UploadService {
       // 6. Record reservation
       db.prepare(
         `INSERT INTO upload_reservations (
-          id, room_id, session_id, expected_bytes, created_at, expires_at, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending')`
-      ).run(uploadId, roomId, session.id, expectedBytes, now, reservationExpiry);
+          id, room_id, session_id, expected_bytes, created_at, expires_at, status, object_key, filename, mime_type
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`
+      ).run(uploadId, roomId, session.id, expectedBytes, now, reservationExpiry, objectKey, cleanFilename, mimeType || 'application/octet-stream');
 
       // 7. Atomically allocate reserved capacity in room
       db.prepare(
@@ -125,7 +135,8 @@ export class UploadService {
     return {
       uploadId,
       maxBytes: expectedBytes,
-      uploadUrl: `/api/rooms/${roomId}/uploads/${uploadId}/complete`,
+      uploadUrl: presignedUrl || `/api/rooms/${roomId}/uploads/${uploadId}/complete`,
+      isDirectS3,
     };
   }
 
@@ -147,11 +158,11 @@ export class UploadService {
     // 1. Fetch pending reservation
     const reservation = db
       .prepare(
-        `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, expires_at as expiresAt, status
+        `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, expires_at as expiresAt, status, object_key as objectKey
          FROM upload_reservations 
          WHERE id = ? AND room_id = ?`
       )
-      .get(uploadId, roomId) as UploadReservation | undefined;
+      .get(uploadId, roomId) as (UploadReservation & { objectKey?: string }) | undefined;
 
     if (!reservation || reservation.status !== 'pending' || now > reservation.expiresAt) {
       throw new AppError(
@@ -173,7 +184,7 @@ export class UploadService {
     }
 
     // 3. Save file to storage driver under opaque key (tagged by size for hybrid storage)
-    const objectKey = storageService.generateOpaqueKey(actualBytes);
+    const objectKey = reservation.objectKey || storageService.generateOpaqueKey(actualBytes);
     try {
       await storageService.save(objectKey, fileBuffer);
     } catch (err) {
@@ -231,6 +242,125 @@ export class UploadService {
     };
 
     // Broadcast new file to room in real time with author session ID
+    realtimeService.broadcastToRoom(
+      roomId,
+      {
+        type: 'ITEM_ADDED',
+        roomId,
+        timestamp: now,
+        payload: { item: createdItem },
+      },
+      session.id
+    );
+
+    return { ...createdItem, canDelete: true };
+  }
+
+  /**
+   * Phase 2 (Direct S3 Pre-signed): Confirm direct S3 upload, verify uploaded object in S3, and commit capacity.
+   * Zero Node server RAM or bandwidth consumed!
+   */
+  public static async completeDirectUpload(
+    roomId: string,
+    uploadId: string,
+    session: RoomSession,
+    originalFilename?: string,
+    mimeType?: string
+  ): Promise<Item> {
+    const db = getDatabase();
+    const now = Date.now();
+
+    // 1. Fetch pending reservation
+    const reservation = db
+      .prepare(
+        `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, 
+                expires_at as expiresAt, status, object_key as objectKey, filename, mime_type as mimeType
+         FROM upload_reservations 
+         WHERE id = ? AND room_id = ?`
+      )
+      .get(uploadId, roomId) as (UploadReservation & { objectKey?: string; filename?: string; mimeType?: string }) | undefined;
+
+    if (!reservation || reservation.status !== 'pending' || now > reservation.expiresAt) {
+      throw new AppError(
+        'UPLOAD_FAILED',
+        'Upload reservation expired or not found. Please initiate a new upload.',
+        400
+      );
+    }
+
+    if (!reservation.objectKey) {
+      throw new AppError('UPLOAD_FAILED', 'No storage key associated with this reservation.', 400);
+    }
+
+    // 2. Verify object exists in storage
+    const exists = await storageService.exists(reservation.objectKey);
+    if (!exists) {
+      throw new AppError(
+        'UPLOAD_FAILED',
+        'Uploaded file not found in storage. Direct upload may have failed or timed out.',
+        400
+      );
+    }
+
+    // 3. Verify actual size from storage
+    const actualBytes = await storageService.getSize(reservation.objectKey);
+    if (actualBytes > reservation.expectedBytes || actualBytes > DROPLET_LIMITS.MAX_FILE_SIZE_BYTES) {
+      await storageService.delete(reservation.objectKey);
+      this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
+      throw new AppError(
+        'FILE_TOO_LARGE',
+        `Uploaded file size (${(actualBytes / (1024 * 1024)).toFixed(1)} MiB) exceeded reserved budget.`,
+        400
+      );
+    }
+
+    const filename = sanitizeFilename(originalFilename || reservation.filename || 'uploaded-file');
+    const finalMimeType = mimeType || reservation.mimeType || 'application/octet-stream';
+    const itemId = uuidv4();
+
+    // 4. Commit actual usage to database atomically
+    const commitTx = db.transaction(() => {
+      db.prepare(
+        `INSERT INTO items (
+          id, room_id, session_id, type, text_content, 
+          object_key, filename, size_bytes, mime_type, created_at
+        ) VALUES (?, ?, ?, 'file', NULL, ?, ?, ?, ?, ?)`
+      ).run(
+        itemId,
+        roomId,
+        session.id,
+        reservation.objectKey,
+        filename,
+        actualBytes,
+        finalMimeType,
+        now
+      );
+
+      db.prepare(
+        `UPDATE rooms 
+         SET used_bytes = used_bytes + ?, 
+             reserved_bytes = MAX(0, reserved_bytes - ?), 
+             file_count = file_count + 1, 
+             last_activity_at = ? 
+         WHERE id = ?`
+      ).run(actualBytes, reservation.expectedBytes, now, roomId);
+
+      db.prepare(`UPDATE upload_reservations SET status = 'completed' WHERE id = ?`).run(uploadId);
+    });
+
+    commitTx();
+
+    const createdItem: Item = {
+      id: itemId,
+      roomId,
+      type: 'file',
+      filename,
+      sizeBytes: actualBytes,
+      mimeType: finalMimeType,
+      createdAt: now,
+      downloadUrl: `/api/rooms/${roomId}/items/${itemId}/download`,
+    };
+
     realtimeService.broadcastToRoom(
       roomId,
       {

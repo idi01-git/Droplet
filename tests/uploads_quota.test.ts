@@ -181,4 +181,69 @@ describe('Step 6: File Uploads, Atomic Quota Reservations & Downloads', () => {
     expect(roomAfter.used_bytes).toBe(0);
     expect(roomAfter.file_count).toBe(0);
   });
+
+  it('GET /api/rooms/:roomId/items/:itemId/download-url returns download ticket metadata', async () => {
+    const fileContent = Buffer.from('Download url test');
+    const initRes = await request(app)
+      .post(`/api/rooms/${roomId}/uploads/initiate`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ filename: 'ticket.txt', sizeBytes: fileContent.length });
+
+    const uploadId = initRes.body.data.uploadId;
+
+    const completeRes = await request(app)
+      .post(`/api/rooms/${roomId}/uploads/${uploadId}/complete`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .attach('file', fileContent, 'ticket.txt');
+
+    const itemId = completeRes.body.data.item.id;
+
+    const urlRes = await request(app)
+      .get(`/api/rooms/${roomId}/items/${itemId}/download-url`)
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(urlRes.status).toBe(200);
+    expect(urlRes.body.success).toBe(true);
+    expect(urlRes.body.data.filename).toBe('ticket.txt');
+    expect(urlRes.body.data.url).toBeDefined();
+    expect(urlRes.body.data.isDirect).toBe(false); // In local test driver
+  });
+
+  it('Direct upload completion commits successfully when object exists in storage', async () => {
+    const fileContent = Buffer.from('Direct S3 payload');
+    const fileSize = fileContent.length;
+
+    // 1. Initiate
+    const initRes = await request(app)
+      .post(`/api/rooms/${roomId}/uploads/initiate`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ filename: 'direct-s3.txt', sizeBytes: fileSize });
+
+    const uploadId = initRes.body.data.uploadId;
+
+    // Simulate S3 upload having stored the file in storage driver under reservation key
+    const db = getDatabase();
+    const reservation = db.prepare('SELECT object_key FROM upload_reservations WHERE id = ?').get(uploadId) as any;
+    expect(reservation.object_key).toBeDefined();
+
+    await storageService.save(reservation.object_key, fileContent);
+
+    // 2. Complete via direct JSON confirmation (zero file buffer in Express)
+    const completeRes = await request(app)
+      .post(`/api/rooms/${roomId}/uploads/${uploadId}/complete`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('Content-Type', 'application/json')
+      .send({ filename: 'direct-s3.txt', mimeType: 'text/plain' });
+
+    expect(completeRes.status).toBe(201);
+    expect(completeRes.body.success).toBe(true);
+    expect(completeRes.body.data.item.filename).toBe('direct-s3.txt');
+    expect(completeRes.body.data.item.sizeBytes).toBe(fileSize);
+
+    // Verify room stats committed
+    const roomAfter = db.prepare('SELECT used_bytes, file_count, reserved_bytes FROM rooms WHERE id = ?').get(roomId) as any;
+    expect(roomAfter.used_bytes).toBe(fileSize);
+    expect(roomAfter.reserved_bytes).toBe(0);
+    expect(roomAfter.file_count).toBe(1);
+  });
 });

@@ -34,7 +34,31 @@ router.post(
 );
 
 /**
+ * GET /api/rooms/:roomId/items/:itemId/download-url
+ * Get an authorized, short-lived pre-signed download URL (60s TTL).
+ * Offloads 100% of network throughput and Node memory directly to AWS S3.
+ */
+router.get(
+  '/:itemId/download-url',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<{ url: string; isDirect: boolean; filename: string; sizeBytes: number; mimeType: string }>>, next: NextFunction) => {
+    try {
+      const { roomId, itemId } = req.params;
+      const downloadInfo = await ItemService.getFileDownloadUrl(roomId, itemId, req.session!);
+
+      res.status(200).json({
+        success: true,
+        data: downloadInfo,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
  * GET /api/rooms/:roomId/items/:itemId/download - Download an authorized file
+ * Redirects directly to pre-signed S3 URL if available, or streams via Node if local driver is used.
  */
 router.get(
   '/:itemId/download',
@@ -42,6 +66,14 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { roomId, itemId } = req.params;
+
+      // Check if short-lived direct pre-signed URL is available
+      const downloadInfo = await ItemService.getFileDownloadUrl(roomId, itemId, req.session!);
+      if (downloadInfo.isDirect) {
+        return res.redirect(302, downloadInfo.url);
+      }
+
+      // Fallback: Local disk streaming (local dev or unit test suite)
       const file = await ItemService.getFileDownload(roomId, itemId, req.session!);
 
       res.setHeader('Content-Type', file.mimeType);

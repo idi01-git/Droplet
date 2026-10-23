@@ -49,6 +49,10 @@ export const DROPLET_LIMITS = {
   /** Upload reservation timeout before uncommitted capacity is freed: 5 minutes. */
   UPLOAD_RESERVATION_TIMEOUT_MS: 5 * ONE_MINUTE_MS,
 
+  /** S3 short-lived presigned URL expiries (seconds) */
+  S3_PRESIGNED_UPLOAD_TTL_SECONDS: 15 * 60, // 15 minutes
+  S3_PRESIGNED_DOWNLOAD_TTL_SECONDS: 60, // 60 seconds
+
   /** Global storage circuit breaker: 2 GiB. Preserves existing unexpired access. */
   GLOBAL_STORAGE_CIRCUIT_BREAKER_BYTES: 2 * ONE_GIB,
 

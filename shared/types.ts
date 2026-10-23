@@ -134,6 +134,7 @@ export interface InitiateUploadResponse {
   uploadId: string;
   maxBytes: number;
   uploadUrl: string;
+  isDirectS3?: boolean;
 }
 
 // Realtime Event definitions

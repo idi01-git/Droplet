@@ -18,12 +18,12 @@ const uploadMiddleware = multer({
 
 /**
  * POST /api/rooms/:roomId/uploads/initiate
- * Phase 1: Atomically validate limits and reserve upload capacity
+ * Phase 1: Atomically validate limits, reserve upload capacity, and generate pre-signed S3 URL if cloud driver is active
  */
 router.post(
   '/initiate',
   requireAuth,
-  (req: Request, res: Response<ApiResponse<InitiateUploadResponse>>, next: NextFunction) => {
+  async (req: Request, res: Response<ApiResponse<InitiateUploadResponse>>, next: NextFunction) => {
     try {
       const { roomId } = req.params;
       const { filename, sizeBytes, mimeType } = req.body;
@@ -36,7 +36,7 @@ router.post(
         throw new AppError('INVALID_PAYLOAD', 'Valid file size in bytes is required.', 400);
       }
 
-      const result = UploadService.initiateUpload(
+      const result = await UploadService.initiateUpload(
         roomId,
         req.session!,
         filename,
@@ -56,33 +56,54 @@ router.post(
 
 /**
  * POST /api/rooms/:roomId/uploads/:uploadId/complete
- * Phase 2: Verify file payload, store in private storage, and commit capacity
+ * Phase 2:
+ * - Direct S3: Confirms direct S3 upload via JSON payload (zero server RAM consumption)
+ * - Local / Fallback: Verify multipart file payload and commit capacity
  */
 router.post(
   '/:uploadId/complete',
   requireAuth,
-  uploadMiddleware.single('file'),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.is('application/json')) {
+      return next();
+    }
+    uploadMiddleware.single('file')(req, res, next);
+  },
   async (req: Request, res: Response<ApiResponse<{ item: Item }>>, next: NextFunction) => {
     try {
       const { roomId, uploadId } = req.params;
 
-      if (!req.file || !req.file.buffer) {
-        throw new AppError('INVALID_PAYLOAD', 'File payload is missing from upload request.', 400);
+      // Case A: Multipart file payload (local storage driver / test environment)
+      if (req.file && req.file.buffer) {
+        const originalName = req.file.originalname || req.body?.filename || 'uploaded-file';
+        const mimeType = req.file.mimetype || 'application/octet-stream';
+
+        const item = await UploadService.completeUpload(
+          roomId,
+          uploadId,
+          req.session!,
+          req.file.buffer,
+          originalName,
+          mimeType
+        );
+
+        return res.status(201).json({
+          success: true,
+          data: { item },
+        });
       }
 
-      const originalName = req.file.originalname || req.body.filename || 'uploaded-file';
-      const mimeType = req.file.mimetype || 'application/octet-stream';
-
-      const item = await UploadService.completeUpload(
+      // Case B: Direct S3 Pre-signed confirmation (zero server RAM!)
+      const { filename, mimeType } = req.body || {};
+      const item = await UploadService.completeDirectUpload(
         roomId,
         uploadId,
         req.session!,
-        req.file.buffer,
-        originalName,
+        filename,
         mimeType
       );
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         data: { item },
       });

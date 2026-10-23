@@ -59,6 +59,24 @@ export function initDatabase(options: DatabaseOptions = {}): DatabaseType {
     // Migration check safely ignored if table does not yet exist
   }
 
+  // Automatic migration: ensure upload_reservations has direct storage metadata
+  try {
+    const resTableInfo = db.pragma('table_info(upload_reservations)') as { name: string }[];
+    if (resTableInfo && resTableInfo.length > 0) {
+      if (!resTableInfo.some((col) => col.name === 'object_key')) {
+        db.exec('ALTER TABLE upload_reservations ADD COLUMN object_key TEXT');
+      }
+      if (!resTableInfo.some((col) => col.name === 'filename')) {
+        db.exec('ALTER TABLE upload_reservations ADD COLUMN filename TEXT');
+      }
+      if (!resTableInfo.some((col) => col.name === 'mime_type')) {
+        db.exec('ALTER TABLE upload_reservations ADD COLUMN mime_type TEXT');
+      }
+    }
+  } catch {
+    // Migration check safely ignored if table does not yet exist
+  }
+
   dbInstance = db;
   return db;
 }

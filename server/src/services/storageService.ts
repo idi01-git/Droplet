@@ -10,6 +10,7 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { DROPLET_LIMITS } from '../../../shared/limits';
 
 export interface StorageDriver {
@@ -19,6 +20,8 @@ export interface StorageDriver {
   deleteFile(key: string): Promise<void>;
   fileExists(key: string): Promise<boolean> | boolean;
   getFileSizeBytes(key: string): Promise<number> | number;
+  getPresignedUploadUrl?(key: string, mimeType?: string, expiresInSeconds?: number): Promise<string | null>;
+  getPresignedDownloadUrl?(key: string, filename?: string, expiresInSeconds?: number): Promise<string | null>;
 }
 
 /**
@@ -78,6 +81,14 @@ export class LocalStorageDriver implements StorageDriver {
     if (!fs.existsSync(filePath)) return 0;
     const stats = fs.statSync(filePath);
     return stats.size;
+  }
+
+  public async getPresignedUploadUrl(_key: string, _mimeType?: string, _expiresInSeconds?: number): Promise<string | null> {
+    return null;
+  }
+
+  public async getPresignedDownloadUrl(_key: string, _filename?: string, _expiresInSeconds?: number): Promise<string | null> {
+    return null;
   }
 }
 
@@ -181,6 +192,46 @@ export class S3StorageDriver implements StorageDriver {
       return res.ContentLength || 0;
     } catch {
       return 0;
+    }
+  }
+
+  public async getPresignedUploadUrl(
+    key: string,
+    mimeType?: string,
+    expiresInSeconds: number = DROPLET_LIMITS.S3_PRESIGNED_UPLOAD_TTL_SECONDS
+  ): Promise<string | null> {
+    if (!this.bucket) return null;
+    try {
+      const command = new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: mimeType || 'application/octet-stream',
+      });
+      return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+    } catch (err) {
+      console.error('Failed to generate pre-signed upload URL:', err);
+      return null;
+    }
+  }
+
+  public async getPresignedDownloadUrl(
+    key: string,
+    filename?: string,
+    expiresInSeconds: number = DROPLET_LIMITS.S3_PRESIGNED_DOWNLOAD_TTL_SECONDS
+  ): Promise<string | null> {
+    if (!this.bucket) return null;
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentDisposition: filename
+          ? `attachment; filename="${encodeURIComponent(filename)}"`
+          : 'attachment',
+      });
+      return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+    } catch (err) {
+      console.error('Failed to generate pre-signed download URL:', err);
+      return null;
     }
   }
 }
@@ -287,6 +338,28 @@ export class HybridStorageDriver implements StorageDriver {
     }
     return this.s3Driver.getFileSizeBytes(key);
   }
+
+  public async getPresignedUploadUrl(
+    key: string,
+    mimeType?: string,
+    expiresInSeconds?: number
+  ): Promise<string | null> {
+    if (this.isS3Key(key)) {
+      return this.s3Driver.getPresignedUploadUrl(key, mimeType, expiresInSeconds);
+    }
+    return null;
+  }
+
+  public async getPresignedDownloadUrl(
+    key: string,
+    filename?: string,
+    expiresInSeconds?: number
+  ): Promise<string | null> {
+    if (this.isS3Key(key)) {
+      return this.s3Driver.getPresignedDownloadUrl(key, filename, expiresInSeconds);
+    }
+    return null;
+  }
 }
 
 class StorageService {
@@ -363,6 +436,28 @@ class StorageService {
 
   public getSize(key: string): number | Promise<number> {
     return this.driver.getFileSizeBytes(key);
+  }
+
+  public async getPresignedUploadUrl(
+    key: string,
+    mimeType?: string,
+    expiresInSeconds?: number
+  ): Promise<string | null> {
+    if (this.driver.getPresignedUploadUrl) {
+      return this.driver.getPresignedUploadUrl(key, mimeType, expiresInSeconds);
+    }
+    return null;
+  }
+
+  public async getPresignedDownloadUrl(
+    key: string,
+    filename?: string,
+    expiresInSeconds?: number
+  ): Promise<string | null> {
+    if (this.driver.getPresignedDownloadUrl) {
+      return this.driver.getPresignedDownloadUrl(key, filename, expiresInSeconds);
+    }
+    return null;
   }
 }
 
