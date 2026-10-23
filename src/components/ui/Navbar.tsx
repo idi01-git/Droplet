@@ -103,8 +103,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <div
+      className="nb-navbar-wrapper"
       style={{
-        padding: '0 24px',
         position: 'fixed',
         top: '16px',
         left: 0,
@@ -121,21 +121,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           pointerEvents: 'auto',
           width: '100%',
           maxWidth: '1232px',
-          minHeight: '68px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 14px 10px 22px',
           backgroundColor: '#FFFDF0',
           border: '2.5px solid #000000',
           borderRadius: '18px',
           boxShadow: '4px 4px 0px #000000',
-          gap: '12px',
           boxSizing: 'border-box',
         }}
       >
         {/* Brand Horizontal Logo on Left (Functions as Home Button) */}
         <div
+          className="nb-navbar-logo"
           onClick={handleHomeClick}
           style={{
             cursor: 'pointer',
@@ -205,30 +203,25 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Actions: Join Room & Create a Room (Hidden when inside an active room session) */}
         {activeTab !== 'room' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          <div className="nb-navbar-actions">
             {/* Join Room Secondary Button */}
             <button
               onClick={handleJoinRoom}
-              className="nb-button"
+              className="nb-button nb-nav-join-btn"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
                 backgroundColor: '#FFFFFF',
                 border: '2.5px solid #000000',
                 borderRadius: '12px',
                 boxShadow: '2.5px 2.5px 0px #000000',
-                padding: '10px 18px',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 800,
-                fontSize: '14px',
                 color: '#000000',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.12s ease',
               }}
             >
-              <QrCodeIcon size={17} />
+              <QrCodeIcon size={16} />
               <span className="nb-btn-text-full">Join Room</span>
               <span className="nb-btn-text-short">Join</span>
             </button>
@@ -242,19 +235,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onSelectTab('home');
                 }
               }}
-              className="nb-button"
+              className="nb-button nb-nav-create-btn"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
                 backgroundColor: '#FFE000',
                 border: '2.5px solid #000000',
                 borderRadius: '12px',
                 boxShadow: '2.5px 2.5px 0px #000000',
-                padding: '10px clamp(12px, 2.5vw, 22px)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 900,
-                fontSize: '14px',
                 color: '#000000',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
@@ -263,7 +251,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <span className="nb-btn-text-full">Create a Room</span>
               <span className="nb-btn-text-short">Create</span>
-              <ArrowRightIcon size={16} strokeWidth={2.5} />
+              <ArrowRightIcon size={15} strokeWidth={2.5} />
             </button>
           </div>
         ) : (
@@ -295,7 +283,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   display: 'inline-block',
                 }}
               />
-              <span>In Room #{roomCode}</span>
+              <span>In Room {roomCode}</span>
             </div>
           </div>
         )}
