@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CopyIcon, CheckCircleIcon, ExternalLinkIcon } from '../icons';
+import { CopyIcon, CheckCircleIcon, ExternalLinkIcon, TrashIcon } from '../icons';
 import Badge from './Badge';
 
 export interface MessageBubbleProps {
@@ -128,6 +128,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <button
               onClick={(e) => handleCopy(e)}
               title="Copy to clipboard"
+              className="nb-bubble-btn"
               style={{
                 background: 'var(--color-surface-card)',
                 border: '2px solid var(--color-ink)',
@@ -145,7 +146,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               }}
             >
               {copied ? <CheckCircleIcon size={14} /> : <CopyIcon size={14} />}
-              <span>{copied ? 'COPIED!' : 'COPY'}</span>
+              <span className="hide-on-mobile">{copied ? 'COPIED!' : 'COPY'}</span>
             </button>
 
             {/* Delete Button (if authorized) */}
@@ -156,19 +157,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   onDelete();
                 }}
                 title="Delete note"
+                className="nb-bubble-btn"
                 style={{
                   background: 'var(--color-error)',
                   border: '2px solid var(--color-ink)',
                   borderRadius: 'var(--radius-sm)',
                   boxShadow: '1.5px 1.5px 0px var(--color-ink)',
                   padding: '4px 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
                   fontSize: '12px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: 'var(--font-display)',
                 }}
               >
-                DEL
+                <TrashIcon size={14} />
+                <span className="hide-on-mobile">DEL</span>
               </button>
             )}
           </div>

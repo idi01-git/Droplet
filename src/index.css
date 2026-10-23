@@ -881,6 +881,13 @@ input, textarea {
     min-width: 36px !important;
     gap: 0 !important;
   }
+  .nb-bubble-btn {
+    padding: 6px !important;
+    min-width: 30px !important;
+    min-height: 28px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
 }
 
 
