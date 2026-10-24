@@ -24,7 +24,7 @@
 [![Tests](https://img.shields.io/badge/Tests-46_Passing-brightgreen?logo=vitest)](https://vitest.dev/)
 [![Design](https://img.shields.io/badge/Style-Neo--Brutalist-FFE000)](https://github.com/idi01-git/Droplet)
 
-[Live Demo](https://droplet-xsau.onrender.com) • [Product Video](#-video-demo) • [Key Features](#-key-features) • [Architecture](#-architecture--direct-to-s3-transfers) • [Security](#-anti-brute-force--security-measures) • [Quick Start](#-quick-start) • [Deployment](#-production-deployment)
+[Live Demo](https://droplet.uno) • [Product Video](#-video-demo) • [Key Features](#-key-features) • [Architecture](#-architecture--direct-to-s3-transfers) • [Security](#-anti-brute-force--security-measures) • [Quick Start](#-quick-start) • [Deployment](#-production-deployment)
 
 </div>
 
@@ -34,14 +34,12 @@
 
 <div align="center">
 
-<video src="assets/droplet-demo.mp4" controls="controls" muted="muted" poster="assets/droplet-demo-preview.jpg" width="100%" style="max-width: 820px; border-radius: 16px; border: 3px solid #000000; box-shadow: 6px 6px 0px #000000;">
-  <a href="assets/droplet-demo.mp4">
-    <img src="assets/droplet-demo-preview.jpg" alt="Droplet Landscape Product Demo" width="100%" style="max-width: 820px; border-radius: 16px; border: 3px solid #000000; box-shadow: 6px 6px 0px #000000;" />
-  </a>
-</video>
+<a href="https://github.com/idi01-git/Droplet/raw/main/assets/droplet-demo.mp4">
+  <img src="assets/droplet-demo.gif" alt="Droplet Product Demo - Click to watch full 1080p video with audio" width="100%" style="max-width: 820px; border-radius: 16px; border: 3px solid #000000; box-shadow: 6px 6px 0px #000000;" />
+</a>
 
 <p align="center">
-  <em>⚡ Watch Droplet in action: 1-click room creation, 4-digit code entry, real-time WebSocket sync, and zero-trace self-destruction.</em>
+  <em>⚡ <b>Live Animated Walkthrough</b> (loops above) • Click the banner or <a href="https://github.com/idi01-git/Droplet/raw/main/assets/droplet-demo.mp4"><b>watch full 1080p video with audio</b></a>.</em>
 </p>
 
 </div>
@@ -233,6 +231,14 @@ Droplet includes a ready-to-deploy [`render.yaml`](render.yaml) blueprint:
 3. Connect your repository. Render automatically builds the React frontend and runs the Node server.
 4. Set your Environment Secrets in Render (`STORAGE_DRIVER=s3`, AWS credentials).
 
+### Custom Domain Setup (`droplet.uno`)
+1. In the **Render Dashboard**, navigate to your Web Service -> **Settings** -> **Custom Domains**.
+2. Click **Add Custom Domain** and enter `droplet.uno` (and optionally `www.droplet.uno`).
+3. In your DNS provider (Namecheap, GoDaddy, Cloudflare, etc.):
+   - Add an **A Record**: Host `@` pointing to Render's IP (displayed in Render dashboard, e.g. `216.24.57.1`).
+   - Add a **CNAME Record**: Host `www` pointing to your service address (e.g. `droplet-xsau.onrender.com`).
+4. Render will automatically issue a free Let's Encrypt SSL/TLS certificate.
+
 ### AWS S3 CORS Configuration
 Since binary uploads transfer directly between the client's browser and AWS S3, configure your bucket CORS under **AWS S3 Console** -> Bucket -> **Permissions** -> **Cross-origin resource sharing (CORS)**:
 
@@ -243,7 +249,8 @@ Since binary uploads transfer directly between the client's browser and AWS S3, 
     "AllowedMethods": ["GET", "PUT", "HEAD"],
     "AllowedOrigins": [
       "https://*.onrender.com",
-      "https://idi01.site",
+      "https://droplet.uno",
+      "https://www.droplet.uno",
       "http://localhost:5173",
       "http://localhost:3001"
     ],

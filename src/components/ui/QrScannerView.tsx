@@ -16,12 +16,12 @@ export function extractRoomCodeFromQr(text: string): string | null {
   if (/^\d{4}$/.test(trimmed)) {
     return trimmed;
   }
-  // 2. Query param (e.g. "https://idi01.site/?join=4821" or "?code=4821")
+  // 2. Query param (e.g. "https://droplet.uno/?join=4821" or "?code=4821")
   const queryMatch = trimmed.match(/[?&](?:join|code)=(\d{4})/i);
   if (queryMatch) {
     return queryMatch[1];
   }
-  // 3. Path parameter (e.g. "https://idi01.site/4821" or "/join/4821")
+  // 3. Path parameter (e.g. "https://droplet.uno/4821" or "/join/4821")
   const pathMatch = trimmed.match(/\/(?:join\/|room\/)?(\d{4})(?:\/|\?|$)/i);
   if (pathMatch) {
     return pathMatch[1];
