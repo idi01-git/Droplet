@@ -13,6 +13,8 @@
 
 **Temporary Peer Sharing Without Accounts. Create a room. Drop anything. Pick it up anywhere. Let it disappear.**
 
+[![Live Website](https://img.shields.io/badge/Live_App-droplet.uno-FFE000?style=for-the-badge&logo=googlechrome&logoColor=black)](https://droplet.uno)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev/)
@@ -24,7 +26,13 @@
 [![Tests](https://img.shields.io/badge/Tests-46_Passing-brightgreen?logo=vitest)](https://vitest.dev/)
 [![Design](https://img.shields.io/badge/Style-Neo--Brutalist-FFE000)](https://github.com/idi01-git/Droplet)
 
-[Live Demo](https://droplet.uno) • [Product Video](#-video-demo) • [Key Features](#-key-features) • [Architecture](#-architecture--direct-to-s3-transfers) • [Security](#-anti-brute-force--security-measures) • [Quick Start](#-quick-start) • [Deployment](#-production-deployment)
+<br/>
+
+> 🌐 **Live Production App:** [**https://droplet.uno**](https://droplet.uno) — Instant peer sharing, no accounts required!
+
+<br/>
+
+[⚡ Live Demo](https://droplet.uno) • [Product Video](#-video-demo) • [Key Features](#-key-features) • [Architecture](#-architecture--direct-to-s3-transfers) • [Security](#-anti-brute-force--security-measures) • [Quick Start](#-quick-start) • [Deployment](#-production-deployment)
 
 </div>
 

@@ -17,7 +17,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ roomCode, isOpen, onCl
 
   const roomUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?join=${roomCode}`
-    : `https://droplet.app/?join=${roomCode}`;
+    : `https://droplet.uno/?join=${roomCode}`;
 
   useEffect(() => {
     if (isOpen && roomCode) {
