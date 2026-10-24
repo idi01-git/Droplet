@@ -1382,6 +1382,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           FOOTER
           ========================================================================= */}
       <footer
+        className="nb-footer-container"
         style={{
           borderTop: '2.5px solid #000000',
           backgroundColor: '#FFFFFF',
@@ -1434,28 +1435,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Sections on Right (Strictly 1 single row across all mobile screen sizes) */}
-            <div
-              className="nb-footer-nav-links"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '20px',
-                fontSize: '13.5px',
-                fontWeight: 700,
-                flexWrap: 'nowrap',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <a href="#features" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+            <div className="nb-footer-nav-links">
+              <a href="#features" className="nb-footer-link">
                 Features
               </a>
-              <a href="#how-it-works" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+              <a href="#how-it-works" className="nb-footer-link">
                 How it works
               </a>
-              <a href="#why-droplet" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+              <a href="#why-droplet" className="nb-footer-link">
                 Why Droplet
               </a>
-              <a href="#faq" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
+              <a href="#faq" className="nb-footer-link">
                 FAQ
               </a>
             </div>
