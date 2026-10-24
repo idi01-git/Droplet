@@ -1,6 +1,5 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { parse } from 'url';
 import { getDb } from '../db/database';
 import { hashToken } from '../utils/crypto';
 import { RoomEvent, RoomSession } from '../../../shared/types';
@@ -24,11 +23,12 @@ class RealtimeService {
     this.wss = new WebSocketServer({ noServer: true });
 
     server.on('upgrade', async (request, socket, head) => {
-      const { pathname, query } = parse(request.url || '', true);
+      const parsedUrl = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+      const pathname = parsedUrl.pathname;
 
       if (pathname === '/ws') {
-        const token = query.token as string | undefined;
-        const roomId = query.roomId as string | undefined;
+        const token = parsedUrl.searchParams.get('token') || undefined;
+        const roomId = parsedUrl.searchParams.get('roomId') || undefined;
 
         if (!token || !roomId) {
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
