@@ -1,6 +1,6 @@
 # ==============================================================================
 # Droplet - Robots.txt
-# https://droplet.app
+# https://droplet.uno
 # Ephemeral, Account-Free P2P Room File Sharing
 # ==============================================================================
 
