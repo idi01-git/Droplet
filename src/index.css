@@ -969,16 +969,16 @@ input, textarea {
   }
 
   .nb-footer-nav-links {
-    width: 100% !important;
-    max-width: 440px !important;
+    width: auto !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
     display: flex !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
     white-space: nowrap !important;
     box-sizing: border-box !important;
-    gap: 16px !important;
+    gap: 20px !important;
   }
 
   .nb-footer-link {
@@ -991,39 +991,39 @@ input, textarea {
 
 @media (max-width: 420px) {
   .nb-footer-container {
-    padding: 24px 14px !important;
+    padding: 24px 16px !important;
   }
 
   .nb-footer-nav-links {
-    width: 100% !important;
-    max-width: 360px !important;
+    width: auto !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
-    justify-content: space-between !important;
-    gap: 14px !important;
+    justify-content: center !important;
+    gap: 18px !important;
   }
 
   .nb-footer-link {
     font-size: 12.5px !important;
-    padding: 6px 2px !important;
+    padding: 6px 3px !important;
   }
 }
 
 @media (max-width: 360px) {
   .nb-footer-container {
-    padding: 20px 10px !important;
+    padding: 20px 14px !important;
   }
 
   .nb-footer-nav-links {
-    width: 100% !important;
-    max-width: 336px !important;
+    width: auto !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
-    justify-content: space-between !important;
-    gap: 10px !important;
+    justify-content: center !important;
+    gap: 15px !important;
   }
 
   .nb-footer-link {
     font-size: 12px !important;
-    padding: 6px 1px !important;
+    padding: 6px 2px !important;
   }
 }
 
