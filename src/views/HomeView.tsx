@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
 import { DropletLogo } from '../components/brand';
-import { RoomCodeInput, Alert } from '../components/ui';
+import { RoomCodeInput, Alert, QrScannerView } from '../components/ui';
 import {
   ZapIcon,
   ShieldIcon,
@@ -10,6 +10,7 @@ import {
   ArrowRightIcon,
   QrCodeIcon,
   CloseIcon,
+  CameraIcon,
 } from '../components/icons';
 import { api } from '../services/api';
 import { RoomSummary } from '../../shared/types';
@@ -32,6 +33,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(!!initialCode);
+  const [joinModalMode, setJoinModalMode] = useState<'code' | 'scan'>('code');
   const [error, setError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -62,12 +64,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
   React.useEffect(() => {
     const handleOpenJoin = () => {
       setModalError(null);
+      setJoinModalMode('code');
       setShowJoinModal(true);
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowJoinModal(false);
         setModalError(null);
+        setJoinModalMode('code');
       }
     };
     window.addEventListener('droplet:open-join-room', handleOpenJoin);
@@ -89,6 +93,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   }, [showJoinModal]);
 
+  const handleCloseJoinModal = () => {
+    setShowJoinModal(false);
+    setModalError(null);
+    setJoinModalMode('code');
+  };
+
+  const handleScanSuccess = (scannedCode: string) => {
+    handleCodeChange(scannedCode);
+    setJoinModalMode('code');
+    handleJoinRoom(scannedCode);
+  };
+
   const handleOpenCreatedRoom = async (roomItem: RecentRoom) => {
     if (roomItem.token) {
       try {
@@ -103,6 +119,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
     setCode(roomItem.code);
     setModalError(null);
+    setJoinModalMode('code');
     setShowJoinModal(true);
   };
 
@@ -388,6 +405,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <button
                   onClick={() => {
                     setModalError(null);
+                    setJoinModalMode('code');
                     setShowJoinModal(true);
                   }}
                   className="nb-button"
@@ -1495,7 +1513,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             zIndex: 9999,
             backdropFilter: 'blur(3px)',
           }}
-          onClick={() => setShowJoinModal(false)}
+          onClick={handleCloseJoinModal}
         >
           <div
             className="nb-modal-content"
@@ -1519,7 +1537,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '20px',
+                marginBottom: '16px',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1561,14 +1579,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       fontWeight: 500,
                     }}
                   >
-                    Enter the 4-digit code to connect
+                    {joinModalMode === 'scan'
+                      ? 'Align QR code inside the frame'
+                      : 'Enter the 4-digit code to connect'}
                   </p>
                 </div>
               </div>
 
               {/* Tactile Close Button */}
               <button
-                onClick={() => setShowJoinModal(false)}
+                onClick={handleCloseJoinModal}
                 aria-label="Close modal"
                 className="nb-button"
                 style={{
@@ -1591,123 +1611,183 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <RoomCodeInput
-                value={code}
-                onChange={handleCodeChange}
-                onSubmit={handleJoinRoom}
-                disabled={isJoining}
-                autoFocus={true}
-                error={modalError}
-              />
+            {/* Mode Switcher Tabs */}
+            <div className="nb-join-mode-toggle" role="tablist" aria-label="Join room method">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={joinModalMode === 'code'}
+                className={`nb-join-mode-btn ${joinModalMode === 'code' ? 'active' : ''}`}
+                onClick={() => {
+                  setModalError(null);
+                  setJoinModalMode('code');
+                }}
+              >
+                <span>🔢 Enter Code</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={joinModalMode === 'scan'}
+                className={`nb-join-mode-btn ${joinModalMode === 'scan' ? 'active' : ''}`}
+                onClick={() => {
+                  setModalError(null);
+                  setJoinModalMode('scan');
+                }}
+              >
+                <CameraIcon size={16} />
+                <span>Scan QR</span>
+              </button>
+            </div>
 
-              {/* Quick Rejoin Chips for Recent Rooms */}
-              {recentRooms.length > 0 && (
-                <div
+            {/* Modal Body: QR Scanner or 4-Digit Manual Input */}
+            {joinModalMode === 'scan' ? (
+              <QrScannerView
+                onScanSuccess={handleScanSuccess}
+                onSwitchToManual={() => {
+                  setModalError(null);
+                  setJoinModalMode('code');
+                }}
+              />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <RoomCodeInput
+                  value={code}
+                  onChange={handleCodeChange}
+                  onSubmit={handleJoinRoom}
+                  disabled={isJoining}
+                  autoFocus={true}
+                  error={modalError}
+                />
+
+                {/* Quick Rejoin Chips for Recent Rooms */}
+                {recentRooms.length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                      padding: '2px 0',
+                    }}
+                  >
+                    <span style={{ fontSize: '11.5px', color: '#71717A', fontWeight: 700 }}>
+                      Your rooms:
+                    </span>
+                    {recentRooms
+                      .filter((r) => r.code && /^\d{4}$/.test(r.code.trim()))
+                      .map((r) => (
+                        <button
+                          key={r.code}
+                          type="button"
+                          onClick={() => {
+                            handleCodeChange(r.code);
+                            handleJoinRoom(r.code);
+                          }}
+                          style={{
+                            padding: '2px 8px',
+                            fontSize: '12px',
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 800,
+                            backgroundColor: code === r.code ? '#FFE000' : '#FFFFFF',
+                            border: '1.5px solid #000000',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            boxShadow: '1.5px 1.5px 0px #000000',
+                            transition: 'all 0.1s ease',
+                          }}
+                        >
+                          {r.code}
+                        </button>
+                      ))}
+                  </div>
+                )}
+
+                {/* Toast message shown ONLY when user attempts to submit with < 4 digits or error */}
+                {modalError && (
+                  <div
+                    role="alert"
+                    style={{
+                      backgroundColor: '#FFF0F0',
+                      border: '2px solid #DE350B',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      color: '#DE350B',
+                      textAlign: 'center',
+                      boxShadow: '2px 2px 0px #000000',
+                    }}
+                  >
+                    {modalError}
+                  </div>
+                )}
+
+                {/* Dynamic Action Button */}
+                <button
+                  onClick={handleConnectClick}
+                  disabled={isJoining}
+                  className="nb-button"
                   style={{
+                    width: '100%',
+                    padding: '13px 20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    padding: '2px 0',
-                  }}
-                >
-                  <span style={{ fontSize: '11.5px', color: '#71717A', fontWeight: 700 }}>
-                    Your rooms:
-                  </span>
-                  {recentRooms
-                    .filter((r) => r.code && /^\d{4}$/.test(r.code.trim()))
-                    .map((r) => (
-                      <button
-                        key={r.code}
-                        type="button"
-                        onClick={() => {
-                          handleCodeChange(r.code);
-                          handleJoinRoom(r.code);
-                        }}
-                        style={{
-                          padding: '2px 8px',
-                          fontSize: '12px',
-                          fontFamily: 'var(--font-display)',
-                          fontWeight: 800,
-                          backgroundColor: code === r.code ? '#FFE000' : '#FFFFFF',
-                          border: '1.5px solid #000000',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          boxShadow: '1.5px 1.5px 0px #000000',
-                          transition: 'all 0.1s ease',
-                        }}
-                      >
-                        {r.code}
-                      </button>
-                    ))}
-                </div>
-              )}
-
-              {/* Toast message shown ONLY when user attempts to submit with < 4 digits */}
-              {modalError && (
-                <div
-                  role="alert"
-                  style={{
-                    backgroundColor: '#FFF0F0',
-                    border: '2px solid #DE350B',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
+                    gap: '8px',
+                    backgroundColor: code.length === 4 ? '#FFE000' : '#F4F4F5',
+                    border: code.length === 4 ? '2.5px solid #000000' : '2px dashed #000000',
+                    borderRadius: '12px',
+                    boxShadow: code.length === 4 ? '3px 3px 0px #000000' : '2px 2px 0px rgba(0, 0, 0, 0.2)',
                     fontFamily: 'var(--font-display)',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    color: '#DE350B',
-                    textAlign: 'center',
-                    boxShadow: '2px 2px 0px #000000',
+                    fontWeight: 900,
+                    fontSize: '15.5px',
+                    color: code.length === 4 ? '#000000' : '#71717A',
+                    cursor: isJoining ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  {modalError}
+                  <span>{isJoining ? 'Connecting...' : 'Connect & Join Room'}</span>
+                  {code.length === 4 && !isJoining && <ArrowRightIcon size={16} />}
+                </button>
+
+                {/* Sub-hint */}
+                <div
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontFamily: 'var(--font-body)',
+                    color: '#71717A',
+                    fontWeight: 500,
+                    marginTop: '2px',
+                  }}
+                >
+                  Tip: Joining from a phone? You can{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalError(null);
+                      setJoinModalMode('scan');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 800,
+                      color: '#000000',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    scan the host's QR code
+                  </button>
+                  .
                 </div>
-              )}
-
-              {/* Dynamic Action Button */}
-              <button
-                onClick={handleConnectClick}
-                disabled={isJoining}
-                className="nb-button"
-                style={{
-                  width: '100%',
-                  padding: '13px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  backgroundColor: code.length === 4 ? '#FFE000' : '#F4F4F5',
-                  border: code.length === 4 ? '2.5px solid #000000' : '2px dashed #000000',
-                  borderRadius: '12px',
-                  boxShadow: code.length === 4 ? '3px 3px 0px #000000' : '2px 2px 0px rgba(0, 0, 0, 0.2)',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 900,
-                  fontSize: '15.5px',
-                  color: code.length === 4 ? '#000000' : '#71717A',
-                  cursor: isJoining ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <span>{isJoining ? 'Connecting...' : 'Connect & Join Room'}</span>
-                {code.length === 4 && !isJoining && <ArrowRightIcon size={16} />}
-              </button>
-
-              {/* Sub-hint */}
-              <div
-                style={{
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-body)',
-                  color: '#71717A',
-                  fontWeight: 500,
-                  marginTop: '2px',
-                }}
-              >
-                Tip: Joining from a phone? You can also scan the host's QR code.
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

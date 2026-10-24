@@ -1197,4 +1197,243 @@ input, textarea {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ==========================================================================
+   Join Modal: Mode Switcher (Code vs QR Scan) & QR Viewfinder
+   ========================================================================== */
+.nb-join-mode-toggle {
+  display: flex;
+  gap: 6px;
+  background-color: #F4F4F5;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 16px;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.nb-join-mode-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: #71717A;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  user-select: none;
+}
+
+.nb-join-mode-btn.active {
+  background-color: #FFE000;
+  color: #000000;
+  border-color: #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.nb-join-mode-btn:hover:not(.active) {
+  color: #000000;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.nb-qr-scanner-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  animation: nbPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.nb-qr-viewfinder-box {
+  width: 100%;
+  height: 250px;
+  background-color: #000000;
+  border: 2.5px solid #000000;
+  border-radius: 16px;
+  box-shadow: 4px 4px 0px #000000;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure html5-qrcode video is full cover */
+.nb-qr-reader-target {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.nb-qr-reader-target video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 13px !important;
+}
+
+.nb-qr-hud-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.nb-qr-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: #FFE000;
+  border-width: 3.5px;
+  border-style: solid;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
+}
+
+.nb-qr-corner.top-left {
+  top: 18px;
+  left: 18px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 6px;
+}
+
+.nb-qr-corner.top-right {
+  top: 18px;
+  right: 18px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 6px;
+}
+
+.nb-qr-corner.bottom-left {
+  bottom: 18px;
+  left: 18px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 6px;
+}
+
+.nb-qr-corner.bottom-right {
+  bottom: 18px;
+  right: 18px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 6px;
+}
+
+.nb-qr-scan-line {
+  position: absolute;
+  left: 15%;
+  width: 70%;
+  height: 3px;
+  background-color: #FFE000;
+  box-shadow: 0 0 10px #FFE000, 0 0 16px rgba(255, 224, 0, 0.8);
+  border-radius: 2px;
+  animation: nbScanBeam 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes nbScanBeam {
+  0% { top: 22px; opacity: 0.9; }
+  50% { opacity: 1; }
+  100% { top: calc(100% - 25px); opacity: 0.9; }
+}
+
+.nb-qr-state-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  z-index: 10;
+  text-align: center;
+}
+
+.nb-qr-state-overlay.error {
+  background-color: #FFFDF0;
+  border: 2px solid #000000;
+}
+
+.nb-qr-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 4px solid #FFE000;
+  border-top-color: transparent;
+  animation: nbSpin 0.9s linear infinite;
+}
+
+.nb-qr-state-text {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.nb-qr-error-text {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #000000;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.nb-qr-manual-fallback-btn {
+  margin-top: 6px;
+  padding: 8px 18px;
+  background-color: #FFE000;
+  border: 2px solid #000000;
+  border-radius: 10px;
+  box-shadow: 2px 2px 0px #000000;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 13.5px;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.nb-qr-manual-fallback-btn:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+
+.nb-qr-invalid-banner {
+  width: 100%;
+  background-color: #FFF0F0;
+  border: 2px solid #DE350B;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12.5px;
+  color: #DE350B;
+  text-align: center;
+  box-shadow: 2px 2px 0px #000000;
+  animation: nbPopIn 0.2s ease backwards;
+}
+
+.nb-qr-helper-text {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: #71717A;
+  margin: 0;
+  text-align: center;
+}
+
+
 
