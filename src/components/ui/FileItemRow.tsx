@@ -59,17 +59,32 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
         border: 'var(--border-thick)',
         borderRadius: 'var(--radius-md)',
         boxShadow: 'var(--shadow-small)',
-        padding: '12px 16px',
-        gap: '12px',
+        padding: '10px 14px',
+        gap: '10px',
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         transition: 'transform 0.12s ease, box-shadow 0.12s ease',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+        }}
+      >
         {/* File Icon Box */}
         <div
+          className="nb-file-icon-box"
           style={{
-            width: '42px',
-            height: '42px',
+            width: '40px',
+            height: '40px',
             backgroundColor: 'var(--color-surface)',
             border: '2px solid var(--color-ink)',
             borderRadius: 'var(--radius-sm)',
@@ -83,23 +98,50 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
         </div>
 
         {/* File Details */}
-        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <div
+          className="nb-file-details"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
+        >
           <span
             style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
-              fontSize: '15px',
+              fontSize: '14.5px',
               color: 'var(--color-ink)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              display: 'block',
+              width: '100%',
             }}
             title={filename}
           >
             {filename}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginTop: '2px',
+              flexWrap: 'wrap',
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--color-muted)',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {formatSize(sizeBytes)}
             </span>
             <Badge variant="file" size="sm">
@@ -110,9 +152,13 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      <div
+        className="nb-file-actions"
+        style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+      >
         <button
           onClick={onDownload}
+          className="nb-file-btn"
           title="Download file"
           aria-label={`Download ${filename}`}
           style={{
@@ -120,24 +166,25 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
             color: 'var(--color-ink)',
             border: '2px solid var(--color-ink)',
             borderRadius: 'var(--radius-sm)',
-            boxShadow: '2px 2px 0px var(--color-ink)',
-            padding: '8px 12px',
+            boxShadow: '1.5px 1.5px 0px var(--color-ink)',
+            padding: '7px 10px',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '5px',
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
-            fontSize: '13px',
+            fontSize: '12.5px',
             cursor: 'pointer',
           }}
         >
-          <DownloadIcon size={16} />
+          <DownloadIcon size={15} />
           <span className="hide-on-mobile">GET</span>
         </button>
 
         {canDelete && onDelete && (
           <button
             onClick={onDelete}
+            className="nb-file-btn nb-file-btn-delete"
             title="Delete file"
             aria-label={`Delete ${filename}`}
             style={{
@@ -145,15 +192,15 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
               color: 'var(--color-ink)',
               border: '2px solid var(--color-ink)',
               borderRadius: 'var(--radius-sm)',
-              boxShadow: '2px 2px 0px var(--color-ink)',
-              padding: '8px',
+              boxShadow: '1.5px 1.5px 0px var(--color-ink)',
+              padding: '7px',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
             }}
           >
-            <TrashIcon size={16} />
+            <TrashIcon size={15} />
           </button>
         )}
       </div>

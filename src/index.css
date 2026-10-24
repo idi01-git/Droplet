@@ -574,18 +574,51 @@ input, textarea {
   box-sizing: border-box;
 }
 
+.nb-room-grid > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.nb-file-row {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 @media (max-width: 600px) {
   .nb-main-content {
     padding-top: 68px !important;
   }
 
   .nb-room-view-container {
-    padding: 12px 14px 24px !important;
+    padding: 12px 10px 24px !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
   }
 
   .nb-room-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     gap: 16px !important;
+  }
+
+  .nb-room-grid .nb-card {
+    padding: 16px 12px !important;
+  }
+
+  .nb-file-row {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+
+  .nb-file-icon-box {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .nb-file-btn {
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
   }
 }
 

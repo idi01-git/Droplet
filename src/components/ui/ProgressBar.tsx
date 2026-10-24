@@ -16,7 +16,18 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   const clampedProgress = Math.min(100, Math.max(0, Math.round(progress)));
 
   return (
-    <div className="nb-progress-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+    <div
+      className="nb-progress-wrapper"
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        boxSizing: 'border-box',
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -26,10 +37,25 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           fontWeight: 700,
           fontSize: '13px',
           color: 'var(--color-ink)',
+          minWidth: 0,
+          gap: '8px',
         }}
       >
-        <span>{label}</span>
-        {showPercentage && <span>{clampedProgress}%</span>}
+        <span
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+            flex: 1,
+          }}
+          title={label}
+        >
+          {label}
+        </span>
+        {showPercentage && (
+          <span style={{ flexShrink: 0, fontWeight: 800 }}>{clampedProgress}%</span>
+        )}
       </div>
 
       <div

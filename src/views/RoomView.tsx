@@ -429,7 +429,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
       {/* Main Room Layout: Left (Notes & Composer) | Right (Files) */}
       <div className="nb-room-grid">
         {/* Left Column: Text & Link Feed + Composer */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0, maxWidth: '100%' }}>
           {/* Text Composer Card */}
           <Card variant="default" padding="md">
             <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>Drop Note or Link</h2>
@@ -540,7 +540,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         </div>
 
         {/* Right Column: Uploaded Files & Dropzone */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0, maxWidth: '100%' }}>
           <Card variant="default" padding="md">
             <div
               style={{
@@ -548,10 +548,12 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: '14px',
+                flexWrap: 'wrap',
+                gap: '8px',
               }}
             >
-              <h2 style={{ fontSize: '18px' }}>Room Files ({fileItems.length}/20)</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h2 style={{ fontSize: '18px', margin: 0 }}>Room Files ({fileItems.length}/20)</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <Badge variant="file" size="sm">
                   {totalUsedMb} MB / 200 MB
                 </Badge>
@@ -608,7 +610,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
 
             {/* Uploaded Files Feed */}
             {fileItems.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                 {fileItems.map((file) => (
                   <FileItemRow
                     key={file.id}
