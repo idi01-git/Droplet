@@ -49,13 +49,31 @@ app.use('/api/rooms/:roomId/uploads', uploadsRouter);
 // Serve built React frontend static files in unified deployment (Render / Production)
 const distPath = path.resolve(process.cwd(), 'dist');
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+  // Static assets with smart caching:
+  // - Hashed assets (/assets/*.js, /assets/*.css) get immutable 1-year cache (instant 0ms repeat loads)
+  // - Images, icons, manifests get 7-day cache
+  // - index.html gets no-cache to guarantee immediate release updates
+  app.use(
+    express.static(distPath, {
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        } else if (filePath.includes(`${path.sep}assets${path.sep}`) || filePath.includes('/assets/')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (filePath.match(/\.(webp|png|jpg|jpeg|svg|ico|webmanifest|xml|txt)$/)) {
+          res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+        }
+      },
+    })
+  );
 
-  // SPA fallback for all non-API routes
+  // SPA fallback for all non-API routes (Always fresh HTML)
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
       return next();
     }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
