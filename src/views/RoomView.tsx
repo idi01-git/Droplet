@@ -152,7 +152,19 @@ export const RoomView: React.FC<RoomViewProps> = ({
       await postTextItem(composerText.trim());
       setComposerText('');
     } catch (err: any) {
-      setActionError(err.message || 'Failed to drop note into room.');
+      if (
+        err.status === 403 ||
+        err.isWaf ||
+        err.message?.toLowerCase().includes('firewall') ||
+        err.message?.toLowerCase().includes('waf') ||
+        err.message?.toLowerCase().includes('blocked')
+      ) {
+        setActionError(
+          'Blocked by security firewall: If sharing code containing <script> tags, raw HTML, or system paths, please upload as a .txt or .md file attachment instead.'
+        );
+      } else {
+        setActionError(err.message || 'Failed to drop note into room.');
+      }
     } finally {
       setIsSending(false);
     }
@@ -461,7 +473,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
-                  {composerText.length > 0 ? `${(composerText.length / 1024).toFixed(1)} KB / 100 KB` : 'Max 100 KiB'}
+                  {composerText.length > 0 ? `${(composerText.length / 1024).toFixed(1)} KB / 100 KB` : 'Max 100 KiB (for raw code/scripts, attach as file)'}
                 </span>
 
                 <Button

@@ -22,7 +22,7 @@ class ApiClient {
   private async parseResponse<T>(res: Response, defaultErrorMsg: string): Promise<T> {
     const contentType = res.headers.get('content-type') || '';
 
-    // Check if the response is HTML instead of JSON (Render cold start, Cloudflare edge 502/503/504, or dev proxy error)
+    // Check if the response is HTML instead of JSON (Render cold start, Cloudflare edge 502/503/504, WAF 403, or dev proxy error)
     if (!contentType.includes('application/json')) {
       if (res.status === 502 || res.status === 503 || res.status === 504) {
         const err = new Error(
@@ -31,6 +31,28 @@ class ApiClient {
         (err as any).status = res.status;
         throw err;
       }
+
+      if (res.status === 403) {
+        let htmlText = '';
+        try {
+          htmlText = await res.text();
+        } catch {}
+
+        const isWaf =
+          htmlText.toLowerCase().includes('firewall') ||
+          htmlText.toLowerCase().includes('waf') ||
+          htmlText.toLowerCase().includes('blocked');
+
+        const err = new Error(
+          isWaf
+            ? 'Blocked by firewall: If sharing code containing <script> tags, raw HTML, or system paths, please upload as a .txt or .md file instead.'
+            : 'Access forbidden by security filter.'
+        );
+        (err as any).status = res.status;
+        (err as any).isWaf = isWaf;
+        throw err;
+      }
+
       const err = new Error(
         res.status >= 500
           ? 'Server temporarily unavailable. Please try again shortly.'
