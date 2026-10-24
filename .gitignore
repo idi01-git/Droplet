@@ -42,3 +42,5 @@ Thumbs.db
 skills-lock.json
 brag-output/
 
+# Local-only specifications
+Droplet_Agent_Spec.md
