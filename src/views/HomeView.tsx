@@ -1433,15 +1433,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </span>
             </div>
 
-            {/* Sections on Right */}
+            {/* Sections on Right (Strictly 1 single row across all mobile screen sizes) */}
             <div
+              className="nb-footer-nav-links"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '24px',
+                gap: '20px',
                 fontSize: '13.5px',
                 fontWeight: 700,
-                flexWrap: 'wrap',
+                flexWrap: 'nowrap',
+                whiteSpace: 'nowrap',
               }}
             >
               <a href="#features" className="nb-footer-link" style={{ color: '#000000', textDecoration: 'none' }}>
