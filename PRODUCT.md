@@ -36,8 +36,7 @@ Unlike permanent cloud storage drives (Google Drive, Dropbox) or account-based m
 - Visual Language: Neo-brutalist identity (vibrant `#FFE000` yellow, bold `#000000` 2px/3px borders, hard `4px 4px 0 #000` tactile drop shadows, Fredoka heading font, Inter body font).
 
 ## Evidence on Hand
-- Full specification documented in `Droplet_Agent_Spec.md`.
-- Working production-grade codebase with 38 passing tests across 8 test suites.
+- Complete production-grade codebase with 46 passing tests across 9 test suites.
 - Vector assets: `DropletLogo.tsx`, `DropletMascot.tsx`, `droplet-icon.svg`.
 
 ## Product Principles
