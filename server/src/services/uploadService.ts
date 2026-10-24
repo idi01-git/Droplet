@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getDatabase } from '../db/database';
+import { getDb } from '../db/database';
 import { storageService } from './storageService';
 import { realtimeService } from './realtimeService';
 import { DROPLET_LIMITS } from '../../../shared/limits';
@@ -32,7 +32,7 @@ export class UploadService {
       );
     }
 
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
     const uploadId = uuidv4();
     const reservationExpiry = now + DROPLET_LIMITS.UPLOAD_RESERVATION_TIMEOUT_MS;
@@ -47,15 +47,21 @@ export class UploadService {
     );
     const isDirectS3 = Boolean(presignedUrl);
 
-    const reserveTransaction = db.transaction(() => {
+    await db.transaction(async (tx) => {
       // 1. Lock and read room state
-      const room = db
-        .prepare(
-          `SELECT id, used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount, status, expires_at as expiresAt
-           FROM rooms 
-           WHERE id = ?`
-        )
-        .get(roomId) as { id: string; usedBytes: number; reservedBytes: number; fileCount: number; status: string; expiresAt: number } | undefined;
+      const room = await tx.get<{
+        id: string;
+        usedBytes: number;
+        reservedBytes: number;
+        fileCount: number;
+        status: string;
+        expiresAt: number;
+      }>(
+        `SELECT id, used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount, status, expires_at as expiresAt
+         FROM rooms 
+         WHERE id = ?`,
+        [roomId]
+      );
 
       if (!room || room.status !== 'active' || now > room.expiresAt) {
         throw new AppError('ROOM_EXPIRED', 'Room has expired or does not exist.', 410);
@@ -82,15 +88,14 @@ export class UploadService {
       }
 
       // 4. Enforce max 2 concurrent uploads per room
-      const activeReservations = db
-        .prepare(
-          `SELECT COUNT(*) as count 
-           FROM upload_reservations 
-           WHERE room_id = ? AND status = 'pending' AND expires_at > ?`
-        )
-        .get(roomId, now) as { count: number };
+      const activeReservations = await tx.get<{ count: number }>(
+        `SELECT COUNT(*) as count 
+         FROM upload_reservations 
+         WHERE room_id = ? AND status = 'pending' AND expires_at > ?`,
+        [roomId, now]
+      );
 
-      if (activeReservations.count >= DROPLET_LIMITS.MAX_CONCURRENT_UPLOADS_PER_ROOM) {
+      if ((activeReservations?.count || 0) >= DROPLET_LIMITS.MAX_CONCURRENT_UPLOADS_PER_ROOM) {
         throw new AppError(
           'ROOM_QUOTA_EXCEEDED',
           `Maximum concurrent uploads (${DROPLET_LIMITS.MAX_CONCURRENT_UPLOADS_PER_ROOM}) active for this room. Please wait.`,
@@ -99,15 +104,13 @@ export class UploadService {
       }
 
       // 5. Enforce global storage circuit breaker
-      const globalStorage = db
-        .prepare(
-          `SELECT COALESCE(SUM(used_bytes + reserved_bytes), 0) as totalBytes 
-           FROM rooms 
-           WHERE status = 'active'`
-        )
-        .get() as { totalBytes: number };
+      const globalStorage = await tx.get<{ totalBytes: number }>(
+        `SELECT COALESCE(SUM(used_bytes + reserved_bytes), 0) as totalBytes 
+         FROM rooms 
+         WHERE status = 'active'`
+      );
 
-      if (globalStorage.totalBytes + expectedBytes > DROPLET_LIMITS.GLOBAL_STORAGE_CIRCUIT_BREAKER_BYTES) {
+      if ((globalStorage?.totalBytes || 0) + expectedBytes > DROPLET_LIMITS.GLOBAL_STORAGE_CIRCUIT_BREAKER_BYTES) {
         throw new AppError(
           'GLOBAL_CAPACITY_REACHED',
           'System-wide capacity threshold reached. Please try again later.',
@@ -116,21 +119,21 @@ export class UploadService {
       }
 
       // 6. Record reservation
-      db.prepare(
+      await tx.run(
         `INSERT INTO upload_reservations (
           id, room_id, session_id, expected_bytes, created_at, expires_at, status, object_key, filename, mime_type
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`
-      ).run(uploadId, roomId, session.id, expectedBytes, now, reservationExpiry, objectKey, cleanFilename, mimeType || 'application/octet-stream');
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+        [uploadId, roomId, session.id, expectedBytes, now, reservationExpiry, objectKey, cleanFilename, mimeType || 'application/octet-stream']
+      );
 
       // 7. Atomically allocate reserved capacity in room
-      db.prepare(
+      await tx.run(
         `UPDATE rooms 
          SET reserved_bytes = reserved_bytes + ?, last_activity_at = ? 
-         WHERE id = ?`
-      ).run(expectedBytes, now, roomId);
+         WHERE id = ?`,
+        [expectedBytes, now, roomId]
+      );
     });
-
-    reserveTransaction();
 
     return {
       uploadId,
@@ -151,18 +154,17 @@ export class UploadService {
     originalFilename: string,
     mimeType?: string
   ): Promise<Item> {
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
     const actualBytes = fileBuffer.length;
 
     // 1. Fetch pending reservation
-    const reservation = db
-      .prepare(
-        `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, expires_at as expiresAt, status, object_key as objectKey
-         FROM upload_reservations 
-         WHERE id = ? AND room_id = ?`
-      )
-      .get(uploadId, roomId) as (UploadReservation & { objectKey?: string }) | undefined;
+    const reservation = await db.get<UploadReservation & { objectKey?: string }>(
+      `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, expires_at as expiresAt, status, object_key as objectKey
+       FROM upload_reservations 
+       WHERE id = ? AND room_id = ?`,
+      [uploadId, roomId]
+    );
 
     if (!reservation || reservation.status !== 'pending' || now > reservation.expiresAt) {
       throw new AppError(
@@ -175,7 +177,7 @@ export class UploadService {
     // 2. Verify bytes do not exceed reservation or max limits
     if (actualBytes > reservation.expectedBytes || actualBytes > DROPLET_LIMITS.MAX_FILE_SIZE_BYTES) {
       // Rollback reservation
-      this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
+      await this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
       throw new AppError(
         'FILE_TOO_LARGE',
         `Uploaded file size (${(actualBytes / (1024 * 1024)).toFixed(1)} MiB) exceeded reserved budget.`,
@@ -188,7 +190,7 @@ export class UploadService {
     try {
       await storageService.save(objectKey, fileBuffer);
     } catch (err) {
-      this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
+      await this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
       throw new AppError('UPLOAD_FAILED', 'Failed to store file bytes. Storage error.', 500);
     }
 
@@ -196,39 +198,39 @@ export class UploadService {
     const itemId = uuidv4();
 
     // 4. Commit actual usage to database atomically
-    const commitTx = db.transaction(() => {
+    await db.transaction(async (tx) => {
       // Insert item
-      db.prepare(
+      await tx.run(
         `INSERT INTO items (
           id, room_id, session_id, type, text_content, 
           object_key, filename, size_bytes, mime_type, created_at
-        ) VALUES (?, ?, ?, 'file', NULL, ?, ?, ?, ?, ?)`
-      ).run(
-        itemId,
-        roomId,
-        session.id,
-        objectKey,
-        cleanFilename,
-        actualBytes,
-        mimeType || 'application/octet-stream',
-        now
+        ) VALUES (?, ?, ?, 'file', NULL, ?, ?, ?, ?, ?)`,
+        [
+          itemId,
+          roomId,
+          session.id,
+          objectKey,
+          cleanFilename,
+          actualBytes,
+          mimeType || 'application/octet-stream',
+          now,
+        ]
       );
 
       // Commit room usage: increase used, decrease reserved, increment file count
-      db.prepare(
+      await tx.run(
         `UPDATE rooms 
          SET used_bytes = used_bytes + ?, 
              reserved_bytes = MAX(0, reserved_bytes - ?), 
              file_count = file_count + 1, 
              last_activity_at = ? 
-         WHERE id = ?`
-      ).run(actualBytes, reservation.expectedBytes, now, roomId);
+         WHERE id = ?`,
+        [actualBytes, reservation.expectedBytes, now, roomId]
+      );
 
       // Mark reservation completed
-      db.prepare(`UPDATE upload_reservations SET status = 'completed' WHERE id = ?`).run(uploadId);
+      await tx.run(`UPDATE upload_reservations SET status = 'completed' WHERE id = ?`, [uploadId]);
     });
-
-    commitTx();
 
     const createdItem: Item = {
       id: itemId,
@@ -267,18 +269,17 @@ export class UploadService {
     originalFilename?: string,
     mimeType?: string
   ): Promise<Item> {
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
 
     // 1. Fetch pending reservation
-    const reservation = db
-      .prepare(
-        `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, 
-                expires_at as expiresAt, status, object_key as objectKey, filename, mime_type as mimeType
-         FROM upload_reservations 
-         WHERE id = ? AND room_id = ?`
-      )
-      .get(uploadId, roomId) as (UploadReservation & { objectKey?: string; filename?: string; mimeType?: string }) | undefined;
+    const reservation = await db.get<UploadReservation & { objectKey?: string; filename?: string; mimeType?: string }>(
+      `SELECT id, room_id as roomId, session_id as sessionId, expected_bytes as expectedBytes, 
+              expires_at as expiresAt, status, object_key as objectKey, filename, mime_type as mimeType
+       FROM upload_reservations 
+       WHERE id = ? AND room_id = ?`,
+      [uploadId, roomId]
+    );
 
     if (!reservation || reservation.status !== 'pending' || now > reservation.expiresAt) {
       throw new AppError(
@@ -306,7 +307,7 @@ export class UploadService {
     const actualBytes = await storageService.getSize(reservation.objectKey);
     if (actualBytes > reservation.expectedBytes || actualBytes > DROPLET_LIMITS.MAX_FILE_SIZE_BYTES) {
       await storageService.delete(reservation.objectKey);
-      this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
+      await this.cancelReservation(uploadId, roomId, reservation.expectedBytes);
       throw new AppError(
         'FILE_TOO_LARGE',
         `Uploaded file size (${(actualBytes / (1024 * 1024)).toFixed(1)} MiB) exceeded reserved budget.`,
@@ -319,36 +320,36 @@ export class UploadService {
     const itemId = uuidv4();
 
     // 4. Commit actual usage to database atomically
-    const commitTx = db.transaction(() => {
-      db.prepare(
+    await db.transaction(async (tx) => {
+      await tx.run(
         `INSERT INTO items (
           id, room_id, session_id, type, text_content, 
           object_key, filename, size_bytes, mime_type, created_at
-        ) VALUES (?, ?, ?, 'file', NULL, ?, ?, ?, ?, ?)`
-      ).run(
-        itemId,
-        roomId,
-        session.id,
-        reservation.objectKey,
-        filename,
-        actualBytes,
-        finalMimeType,
-        now
+        ) VALUES (?, ?, ?, 'file', NULL, ?, ?, ?, ?, ?)`,
+        [
+          itemId,
+          roomId,
+          session.id,
+          reservation.objectKey,
+          filename,
+          actualBytes,
+          finalMimeType,
+          now,
+        ]
       );
 
-      db.prepare(
+      await tx.run(
         `UPDATE rooms 
          SET used_bytes = used_bytes + ?, 
              reserved_bytes = MAX(0, reserved_bytes - ?), 
              file_count = file_count + 1, 
              last_activity_at = ? 
-         WHERE id = ?`
-      ).run(actualBytes, reservation.expectedBytes, now, roomId);
+         WHERE id = ?`,
+        [actualBytes, reservation.expectedBytes, now, roomId]
+      );
 
-      db.prepare(`UPDATE upload_reservations SET status = 'completed' WHERE id = ?`).run(uploadId);
+      await tx.run(`UPDATE upload_reservations SET status = 'completed' WHERE id = ?`, [uploadId]);
     });
-
-    commitTx();
 
     const createdItem: Item = {
       id: itemId,
@@ -378,48 +379,47 @@ export class UploadService {
   /**
    * Cancel and release a pending reservation.
    */
-  public static cancelReservation(uploadId: string, roomId: string, expectedBytes: number): void {
-    const db = getDatabase();
-    const cancelTx = db.transaction(() => {
-      db.prepare(`UPDATE upload_reservations SET status = 'cancelled' WHERE id = ?`).run(uploadId);
-      db.prepare(
+  public static async cancelReservation(uploadId: string, roomId: string, expectedBytes: number): Promise<void> {
+    const db = getDb();
+    await db.transaction(async (tx) => {
+      await tx.run(`UPDATE upload_reservations SET status = 'cancelled' WHERE id = ?`, [uploadId]);
+      await tx.run(
         `UPDATE rooms 
          SET reserved_bytes = MAX(0, reserved_bytes - ?) 
-         WHERE id = ?`
-      ).run(expectedBytes, roomId);
+         WHERE id = ?`,
+        [expectedBytes, roomId]
+      );
     });
-    cancelTx();
   }
 
   /**
    * Background cleanup of expired/timed-out reservations.
    */
-  public static cleanupStaleReservations(): number {
-    const db = getDatabase();
+  public static async cleanupStaleReservations(): Promise<number> {
+    const db = getDb();
     const now = Date.now();
 
-    const staleReservations = db
-      .prepare(
-        `SELECT id, room_id as roomId, expected_bytes as expectedBytes 
-         FROM upload_reservations 
-         WHERE status = 'pending' AND expires_at < ?`
-      )
-      .all(now) as { id: string; roomId: string; expectedBytes: number }[];
+    const staleReservations = await db.all<{ id: string; roomId: string; expectedBytes: number }>(
+      `SELECT id, room_id as roomId, expected_bytes as expectedBytes 
+       FROM upload_reservations 
+       WHERE status = 'pending' AND expires_at < ?`,
+      [now]
+    );
 
     if (staleReservations.length === 0) return 0;
 
-    const cleanupTx = db.transaction(() => {
+    await db.transaction(async (tx) => {
       for (const res of staleReservations) {
-        db.prepare(`UPDATE upload_reservations SET status = 'timed_out' WHERE id = ?`).run(res.id);
-        db.prepare(
+        await tx.run(`UPDATE upload_reservations SET status = 'timed_out' WHERE id = ?`, [res.id]);
+        await tx.run(
           `UPDATE rooms 
            SET reserved_bytes = MAX(0, reserved_bytes - ?) 
-           WHERE id = ?`
-        ).run(res.expectedBytes, res.roomId);
+           WHERE id = ?`,
+          [res.expectedBytes, res.roomId]
+        );
       }
     });
 
-    cleanupTx();
     return staleReservations.length;
   }
 }

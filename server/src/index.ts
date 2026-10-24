@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
 import { DROPLET_LIMITS } from '../../shared/limits';
-import { initDatabase } from './db/database';
+import { initDatabase, ensureDatabaseSchema, getDb } from './db/database';
 import roomsRouter from './routes/rooms';
 import itemsRouter from './routes/items';
 import uploadsRouter from './routes/uploads';
@@ -13,8 +13,11 @@ import { errorHandler } from './middleware/errorHandler';
 import { realtimeService } from './services/realtimeService';
 import { CleanupService } from './services/cleanupService';
 
-// Initialize SQLite database
+// Initialize SQLite / Serverless LibSQL database
 initDatabase();
+ensureDatabaseSchema().catch((err) => {
+  console.error('[Droplet DB] Schema initialization error:', err);
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -28,10 +31,12 @@ app.use(express.json({ limit: `${DROPLET_LIMITS.MAX_TEXT_SIZE_BYTES}b` }));
 
 // Health check endpoint (Spec Section 12)
 app.get('/api/health', (_req, res) => {
+  const db = getDb();
   res.json({
     status: 'ok',
     uptime: process.uptime(),
     timestamp: Date.now(),
+    database: db.isServerless ? 'turso_serverless' : 'sqlite_local',
     limits: {
       roomLifetimeMs: DROPLET_LIMITS.ROOM_LIFETIME_MS,
       maxFilesPerRoom: DROPLET_LIMITS.MAX_FILES_PER_ROOM,

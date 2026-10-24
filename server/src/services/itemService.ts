@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getDatabase } from '../db/database';
+import { getDb } from '../db/database';
 import { realtimeService } from './realtimeService';
 import { storageService } from './storageService';
 import { DROPLET_LIMITS } from '../../../shared/limits';
@@ -11,12 +11,12 @@ export class ItemService {
   /**
    * Create and broadcast a text, link, or snippet item.
    */
-  public static createTextItem(
+  public static async createTextItem(
     roomId: string,
     session: RoomSession,
     text: string,
     requestedType?: 'text' | 'link'
-  ): Item {
+  ): Promise<Item> {
     const trimmed = text.trim();
     if (!trimmed) {
       throw new AppError('INVALID_PAYLOAD', 'Text content cannot be empty.', 400);
@@ -60,32 +60,31 @@ export class ItemService {
       finalType = 'link';
     }
 
-    const db = getDatabase();
+    const db = getDb();
     const itemId = uuidv4();
     const now = Date.now();
 
-    // Insert item and update room activity
-    const insertTx = db.transaction(() => {
-      db.prepare(
+    // Insert item and update room activity in an atomic transaction
+    await db.transaction(async (tx) => {
+      await tx.run(
         `INSERT INTO items (
           id, room_id, session_id, type, text_content, 
           filename, size_bytes, mime_type, created_at
-        ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)`
-      ).run(
-        itemId,
-        roomId,
-        session.id,
-        finalType,
-        trimmed,
-        byteLength,
-        finalType === 'link' ? 'text/uri-list' : 'text/plain',
-        now
+        ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
+        [
+          itemId,
+          roomId,
+          session.id,
+          finalType,
+          trimmed,
+          byteLength,
+          finalType === 'link' ? 'text/uri-list' : 'text/plain',
+          now,
+        ]
       );
 
-      db.prepare(`UPDATE rooms SET last_activity_at = ? WHERE id = ?`).run(now, roomId);
+      await tx.run(`UPDATE rooms SET last_activity_at = ? WHERE id = ?`, [now, roomId]);
     });
-
-    insertTx();
 
     const createdItem: Item = {
       id: itemId,
@@ -120,23 +119,22 @@ export class ItemService {
     itemId: string,
     _session: RoomSession
   ): Promise<{ stream: any; filename: string; mimeType: string; sizeBytes: number }> {
-    const db = getDatabase();
+    const db = getDb();
 
-    const item = db
-      .prepare(
-        `SELECT id, room_id as roomId, object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, type 
-         FROM items 
-         WHERE id = ? AND room_id = ? AND type = 'file'`
-      )
-      .get(itemId, roomId) as {
-        id: string;
-        roomId: string;
-        objectKey: string;
-        filename: string;
-        sizeBytes: number;
-        mimeType: string;
-        type: string;
-      } | undefined;
+    const item = await db.get<{
+      id: string;
+      roomId: string;
+      objectKey: string;
+      filename: string;
+      sizeBytes: number;
+      mimeType: string;
+      type: string;
+    }>(
+      `SELECT id, room_id as roomId, object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, type 
+       FROM items 
+       WHERE id = ? AND room_id = ? AND type = 'file'`,
+      [itemId, roomId]
+    );
 
     if (!item) {
       throw new AppError('INVALID_PAYLOAD', 'File not found in this room.', 404);
@@ -167,23 +165,22 @@ export class ItemService {
     itemId: string,
     _session: RoomSession
   ): Promise<{ url: string; isDirect: boolean; filename: string; sizeBytes: number; mimeType: string }> {
-    const db = getDatabase();
+    const db = getDb();
 
-    const item = db
-      .prepare(
-        `SELECT id, room_id as roomId, object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, type 
-         FROM items 
-         WHERE id = ? AND room_id = ? AND type = 'file'`
-      )
-      .get(itemId, roomId) as {
-        id: string;
-        roomId: string;
-        objectKey: string;
-        filename: string;
-        sizeBytes: number;
-        mimeType: string;
-        type: string;
-      } | undefined;
+    const item = await db.get<{
+      id: string;
+      roomId: string;
+      objectKey: string;
+      filename: string;
+      sizeBytes: number;
+      mimeType: string;
+      type: string;
+    }>(
+      `SELECT id, room_id as roomId, object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, type 
+       FROM items 
+       WHERE id = ? AND room_id = ? AND type = 'file'`,
+      [itemId, roomId]
+    );
 
     if (!item) {
       throw new AppError('INVALID_PAYLOAD', 'File not found in this room.', 404);
@@ -221,23 +218,22 @@ export class ItemService {
    * Delete an item (authorized for author or room owner).
    */
   public static async deleteItem(roomId: string, itemId: string, session: RoomSession): Promise<void> {
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
 
-    const item = db
-      .prepare(
-        `SELECT id, room_id as roomId, session_id as sessionId, type, object_key as objectKey, size_bytes as sizeBytes 
-         FROM items 
-         WHERE id = ? AND room_id = ?`
-      )
-      .get(itemId, roomId) as {
-        id: string;
-        roomId: string;
-        sessionId: string;
-        type: ItemType;
-        objectKey?: string;
-        sizeBytes: number;
-      } | undefined;
+    const item = await db.get<{
+      id: string;
+      roomId: string;
+      sessionId: string;
+      type: ItemType;
+      objectKey?: string;
+      sizeBytes: number;
+    }>(
+      `SELECT id, room_id as roomId, session_id as sessionId, type, object_key as objectKey, size_bytes as sizeBytes 
+       FROM items 
+       WHERE id = ? AND room_id = ?`,
+      [itemId, roomId]
+    );
 
     if (!item) {
       throw new AppError('INVALID_PAYLOAD', 'Item not found in this room.', 404);
@@ -261,21 +257,20 @@ export class ItemService {
     }
 
     // Atomic database update
-    const deleteTx = db.transaction(() => {
-      db.prepare(`DELETE FROM items WHERE id = ?`).run(itemId);
+    await db.transaction(async (tx) => {
+      await tx.run(`DELETE FROM items WHERE id = ?`, [itemId]);
 
       if (item.type === 'file') {
-        db.prepare(
+        await tx.run(
           `UPDATE rooms 
            SET used_bytes = MAX(0, used_bytes - ?), 
                file_count = MAX(0, file_count - 1), 
                last_activity_at = ? 
-           WHERE id = ?`
-        ).run(item.sizeBytes, now, roomId);
+           WHERE id = ?`,
+          [item.sizeBytes, now, roomId]
+        );
       }
     });
-
-    deleteTx();
 
     // Broadcast deletion in real time
     realtimeService.broadcastToRoom(roomId, {

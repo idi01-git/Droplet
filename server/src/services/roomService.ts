@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getDatabase } from '../db/database';
+import { getDb } from '../db/database';
 import { generateRoomCode, generateSessionToken, hashToken } from '../utils/crypto';
 import { DROPLET_LIMITS } from '../../../shared/limits';
 import { AppError } from '../middleware/errorHandler';
@@ -9,20 +9,19 @@ export class RoomService {
   /**
    * Find an active, unique 4-digit room code.
    */
-  public static generateUniqueCode(): string {
-    const db = getDatabase();
+  public static async generateUniqueCode(): Promise<string> {
+    const db = getDb();
     const now = Date.now();
 
     for (let attempt = 0; attempt < 50; attempt++) {
       const code = generateRoomCode();
       const codeHash = hashToken(code);
 
-      const existing = db
-        .prepare(
-          `SELECT id FROM rooms 
-           WHERE code_hash = ? AND status = 'active' AND expires_at > ?`
-        )
-        .get(codeHash, now);
+      const existing = await db.get<{ id: string }>(
+        `SELECT id FROM rooms 
+         WHERE code_hash = ? AND status = 'active' AND expires_at > ?`,
+        [codeHash, now]
+      );
 
       if (!existing) {
         return code;
@@ -39,12 +38,12 @@ export class RoomService {
   /**
    * Create a new room with an owner session.
    */
-  public static createRoom(_creatorIp?: string): { room: RoomSummary; sessionToken: string; code: string } {
-    const db = getDatabase();
+  public static async createRoom(_creatorIp?: string): Promise<{ room: RoomSummary; sessionToken: string; code: string }> {
+    const db = getDb();
     const now = Date.now();
     const expiresAt = now + DROPLET_LIMITS.ROOM_LIFETIME_MS;
     const roomId = uuidv4();
-    const code = this.generateUniqueCode();
+    const code = await this.generateUniqueCode();
     const codeHash = hashToken(code);
 
     const sessionToken = generateSessionToken();
@@ -52,24 +51,24 @@ export class RoomService {
     const sessionId = uuidv4();
 
     // Execute room & session creation in an atomic transaction
-    const createTransaction = db.transaction(() => {
+    await db.transaction(async (tx) => {
       // Insert room
-      db.prepare(
+      await tx.run(
         `INSERT INTO rooms (
           id, code, code_hash, created_at, expires_at, status, 
           owner_session_hash, used_bytes, reserved_bytes, file_count, last_activity_at
-        ) VALUES (?, ?, ?, ?, ?, 'active', ?, 0, 0, 0, ?)`
-      ).run(roomId, code, codeHash, now, expiresAt, sessionTokenHash, now);
+        ) VALUES (?, ?, ?, ?, ?, 'active', ?, 0, 0, 0, ?)`,
+        [roomId, code, codeHash, now, expiresAt, sessionTokenHash, now]
+      );
 
       // Insert owner session
-      db.prepare(
+      await tx.run(
         `INSERT INTO sessions (
           id, room_id, token_hash, role, created_at, expires_at
-        ) VALUES (?, ?, ?, 'owner', ?, ?)`
-      ).run(sessionId, roomId, sessionTokenHash, now, expiresAt);
+        ) VALUES (?, ?, ?, 'owner', ?, ?)`,
+        [sessionId, roomId, sessionTokenHash, now, expiresAt]
+      );
     });
-
-    createTransaction();
 
     const roomSummary: RoomSummary = {
       id: roomId,
@@ -90,24 +89,23 @@ export class RoomService {
   /**
    * Join an existing active room via 4-digit code.
    */
-  public static joinRoom(code: string): { room: RoomSummary; sessionToken: string } {
+  public static async joinRoom(code: string): Promise<{ room: RoomSummary; sessionToken: string }> {
     if (!DROPLET_LIMITS.ROOM_CODE_REGEX.test(code)) {
       throw new AppError('INVALID_CODE', 'Room code must be a 4-digit number.', 400);
     }
 
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
     const codeHash = hashToken(code);
 
     // Look for active room with this code
-    const roomRow = db
-      .prepare(
-        `SELECT id, code, created_at as createdAt, expires_at as expiresAt, status,
-                used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
-         FROM rooms 
-         WHERE code_hash = ? AND status = 'active' AND expires_at > ?`
-      )
-      .get(codeHash, now) as (Room & { code?: string }) | undefined;
+    const roomRow = await db.get<Room & { code?: string }>(
+      `SELECT id, code, created_at as createdAt, expires_at as expiresAt, status,
+              used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
+       FROM rooms 
+       WHERE code_hash = ? AND status = 'active' AND expires_at > ?`,
+      [codeHash, now]
+    );
 
     if (!roomRow) {
       throw new AppError('ROOM_NOT_FOUND', 'No active room found with this code. It may have expired.', 404);
@@ -115,7 +113,7 @@ export class RoomService {
 
     // Ensure code is persisted if room row didn't have it
     if (!roomRow.code) {
-      db.prepare(`UPDATE rooms SET code = ? WHERE id = ?`).run(code, roomRow.id);
+      await db.run(`UPDATE rooms SET code = ? WHERE id = ?`, [code, roomRow.id]);
     }
 
     // Generate participant session
@@ -123,11 +121,12 @@ export class RoomService {
     const sessionTokenHash = hashToken(sessionToken);
     const sessionId = uuidv4();
 
-    db.prepare(
+    await db.run(
       `INSERT INTO sessions (
         id, room_id, token_hash, role, created_at, expires_at
-      ) VALUES (?, ?, ?, 'participant', ?, ?)`
-    ).run(sessionId, roomRow.id, sessionTokenHash, now, roomRow.expiresAt);
+      ) VALUES (?, ?, ?, 'participant', ?, ?)`,
+      [sessionId, roomRow.id, sessionTokenHash, now, roomRow.expiresAt]
+    );
 
     const roomSummary: RoomSummary = {
       id: roomRow.id,
@@ -148,18 +147,17 @@ export class RoomService {
   /**
    * Retrieve room details and unexpired items.
    */
-  public static getRoomDetails(roomId: string, session: RoomSession): { room: RoomSummary; items: Item[] } {
-    const db = getDatabase();
+  public static async getRoomDetails(roomId: string, session: RoomSession): Promise<{ room: RoomSummary; items: Item[] }> {
+    const db = getDb();
     const now = Date.now();
 
-    const roomRow = db
-      .prepare(
-        `SELECT id, code, created_at as createdAt, expires_at as expiresAt, status,
-                used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
-         FROM rooms 
-         WHERE id = ?`
-      )
-      .get(roomId) as (Room & { code?: string }) | undefined;
+    const roomRow = await db.get<Room & { code?: string }>(
+      `SELECT id, code, created_at as createdAt, expires_at as expiresAt, status,
+              used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
+       FROM rooms 
+       WHERE id = ?`,
+      [roomId]
+    );
 
     if (!roomRow || roomRow.status === 'deleted') {
       throw new AppError('ROOM_NOT_FOUND', 'Room not found or has been deleted.', 404);
@@ -170,15 +168,14 @@ export class RoomService {
     }
 
     // Fetch items with permission check for deletion
-    const itemRows = db
-      .prepare(
-        `SELECT id, room_id as roomId, session_id as sessionId, type, text_content as textContent, 
-                filename, size_bytes as sizeBytes, mime_type as mimeType, created_at as createdAt
-         FROM items 
-         WHERE room_id = ? 
-         ORDER BY created_at DESC`
-      )
-      .all(roomId) as (Item & { sessionId: string })[];
+    const itemRows = await db.all<Item & { sessionId: string }>(
+      `SELECT id, room_id as roomId, session_id as sessionId, type, text_content as textContent, 
+              filename, size_bytes as sizeBytes, mime_type as mimeType, created_at as createdAt
+       FROM items 
+       WHERE room_id = ? 
+       ORDER BY created_at DESC`,
+      [roomId]
+    );
 
     const isOwner = session.role === 'owner';
     const items: Item[] = itemRows.map((row) => ({
@@ -212,21 +209,21 @@ export class RoomService {
   /**
    * Delete a room immediately (Owner only).
    */
-  public static deleteRoom(roomId: string): void {
-    const db = getDatabase();
+  public static async deleteRoom(roomId: string): Promise<void> {
+    const db = getDb();
     const now = Date.now();
 
     // Mark room as deleted and revoke all active sessions immediately
-    const deleteTx = db.transaction(() => {
-      db.prepare(
-        `UPDATE rooms SET status = 'deleted', last_activity_at = ? WHERE id = ?`
-      ).run(now, roomId);
+    await db.transaction(async (tx) => {
+      await tx.run(
+        `UPDATE rooms SET status = 'deleted', last_activity_at = ? WHERE id = ?`,
+        [now, roomId]
+      );
 
-      db.prepare(
-        `UPDATE sessions SET revoked_at = ? WHERE room_id = ? AND revoked_at IS NULL`
-      ).run(now, roomId);
+      await tx.run(
+        `UPDATE sessions SET revoked_at = ? WHERE room_id = ? AND revoked_at IS NULL`,
+        [now, roomId]
+      );
     });
-
-    deleteTx();
   }
 }

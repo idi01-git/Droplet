@@ -1,7 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { parse } from 'url';
-import { getDatabase } from '../db/database';
+import { getDb } from '../db/database';
 import { hashToken } from '../utils/crypto';
 import { RoomEvent, RoomSession } from '../../../shared/types';
 
@@ -23,7 +23,7 @@ class RealtimeService {
   public initialize(server: HttpServer): void {
     this.wss = new WebSocketServer({ noServer: true });
 
-    server.on('upgrade', (request, socket, head) => {
+    server.on('upgrade', async (request, socket, head) => {
       const { pathname, query } = parse(request.url || '', true);
 
       if (pathname === '/ws') {
@@ -36,28 +36,32 @@ class RealtimeService {
           return;
         }
 
-        // Validate session token against database
-        const db = getDatabase();
-        const tokenHash = hashToken(token);
-        const now = Date.now();
+        try {
+          // Validate session token against database
+          const db = getDb();
+          const tokenHash = hashToken(token);
+          const now = Date.now();
 
-        const session = db
-          .prepare(
+          const session = await db.get<RoomSession>(
             `SELECT id, room_id as roomId, token_hash as tokenHash, role, created_at as createdAt, expires_at as expiresAt, revoked_at as revokedAt
              FROM sessions
-             WHERE token_hash = ? AND room_id = ? AND revoked_at IS NULL`
-          )
-          .get(tokenHash, roomId) as RoomSession | undefined;
+             WHERE token_hash = ? AND room_id = ? AND revoked_at IS NULL`,
+            [tokenHash, roomId]
+          );
 
-        if (!session || now > session.expiresAt) {
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          if (!session || now > session.expiresAt) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+            return;
+          }
+
+          this.wss?.handleUpgrade(request, socket, head, (ws) => {
+            this.wss?.emit('connection', ws, request, roomId, session.id, session.role);
+          });
+        } catch {
+          socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
           socket.destroy();
-          return;
         }
-
-        this.wss?.handleUpgrade(request, socket, head, (ws) => {
-          this.wss?.emit('connection', ws, request, roomId, session.id, session.role);
-        });
       }
     });
 

@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { getDatabase } from '../db/database';
+import { getDb } from '../db/database';
 import { storageService } from './storageService';
 import { DROPLET_LIMITS } from '../../../shared/limits';
 import { AppError } from '../middleware/errorHandler';
@@ -15,17 +15,16 @@ export class ArchiveService {
     roomId: string,
     _session: RoomSession
   ): Promise<{ buffer: Buffer; filename: string; totalBytes: number }> {
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
 
     // 1. Fetch room
-    const room = db
-      .prepare(
-        `SELECT id, created_at as createdAt, expires_at as expiresAt, status, used_bytes as usedBytes 
-         FROM rooms 
-         WHERE id = ?`
-      )
-      .get(roomId) as Room | undefined;
+    const room = await db.get<Room>(
+      `SELECT id, created_at as createdAt, expires_at as expiresAt, status, used_bytes as usedBytes 
+       FROM rooms 
+       WHERE id = ?`,
+      [roomId]
+    );
 
     if (!room || room.status === 'deleted') {
       throw new AppError('ROOM_NOT_FOUND', 'Room not found or has been deleted.', 404);
@@ -36,15 +35,14 @@ export class ArchiveService {
     }
 
     // 2. Fetch all room items
-    const items = db
-      .prepare(
-        `SELECT id, room_id as roomId, type, text_content as textContent, 
-                object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, created_at as createdAt
-         FROM items 
-         WHERE room_id = ? 
-         ORDER BY created_at ASC`
-      )
-      .all(roomId) as (Item & { objectKey?: string })[];
+    const items = await db.all<Item & { objectKey?: string }>(
+      `SELECT id, room_id as roomId, type, text_content as textContent, 
+              object_key as objectKey, filename, size_bytes as sizeBytes, mime_type as mimeType, created_at as createdAt
+       FROM items 
+       WHERE room_id = ? 
+       ORDER BY created_at ASC`,
+      [roomId]
+    );
 
     const fileItems = items.filter((i) => i.type === 'file');
     const textItems = items.filter((i) => i.type === 'text' || i.type === 'link');

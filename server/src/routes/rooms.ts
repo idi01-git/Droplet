@@ -30,10 +30,10 @@ function getClientIp(req: Request): string {
 router.post(
   '/',
   rateLimitRoomCreation,
-  (req: Request, res: Response<ApiResponse<CreateRoomResponse>>, next: NextFunction) => {
+  async (req: Request, res: Response<ApiResponse<CreateRoomResponse>>, next: NextFunction) => {
     try {
       const ip = getClientIp(req);
-      const result = RoomService.createRoom(ip);
+      const result = await RoomService.createRoom(ip);
       registerCreatedRoomForIp(ip, result.room.id);
 
       res.status(201).json({
@@ -55,7 +55,7 @@ router.post(
 router.post(
   '/join',
   checkFailedJoinLockout,
-  (req: Request, res: Response<ApiResponse<JoinRoomResponse>>, next: NextFunction) => {
+  async (req: Request, res: Response<ApiResponse<JoinRoomResponse>>, next: NextFunction) => {
     const ip = getClientIp(req);
     const { code } = req.body;
 
@@ -65,7 +65,7 @@ router.post(
     }
 
     try {
-      const result = RoomService.joinRoom(code.trim());
+      const result = await RoomService.joinRoom(code.trim());
       // Clear failed attempts upon successful join
       clearFailedJoinAttempts(ip);
 
@@ -99,10 +99,10 @@ router.post(
 router.get(
   '/:roomId',
   requireAuth,
-  (req: Request, res: Response<ApiResponse<RoomDetailsResponse>>, next: NextFunction) => {
+  async (req: Request, res: Response<ApiResponse<RoomDetailsResponse>>, next: NextFunction) => {
     try {
       const { roomId } = req.params;
-      const details = RoomService.getRoomDetails(roomId, req.session!);
+      const details = await RoomService.getRoomDetails(roomId, req.session!);
 
       res.status(200).json({
         success: true,
@@ -121,7 +121,7 @@ router.delete(
   '/:roomId',
   requireAuth,
   requireOwner,
-  (req: Request, res: Response<ApiResponse<{ message: string }>>, next: NextFunction) => {
+  async (req: Request, res: Response<ApiResponse<{ message: string }>>, next: NextFunction) => {
     try {
       const { roomId } = req.params;
       // Ensure the owner can only delete their own room
@@ -138,7 +138,7 @@ router.delete(
       });
       realtimeService.closeRoomConnections(roomId, 'Room deleted by owner');
 
-      RoomService.deleteRoom(roomId);
+      await RoomService.deleteRoom(roomId);
       unregisterCreatedRoom(roomId);
 
       res.status(200).json({

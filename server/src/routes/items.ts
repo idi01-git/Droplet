@@ -12,7 +12,7 @@ const router = Router({ mergeParams: true });
 router.post(
   '/text',
   requireAuth,
-  (req: Request, res: Response<ApiResponse<{ item: Item }>>, next: NextFunction) => {
+  async (req: Request, res: Response<ApiResponse<{ item: Item }>>, next: NextFunction) => {
     try {
       const { roomId } = req.params;
       const { text, type } = req.body;
@@ -21,7 +21,7 @@ router.post(
         throw new AppError('INVALID_PAYLOAD', 'Text field is required and must be a string.', 400);
       }
 
-      const item = ItemService.createTextItem(roomId, req.session!, text, type);
+      const item = await ItemService.createTextItem(roomId, req.session!, text, type);
 
       res.status(201).json({
         success: true,

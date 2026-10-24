@@ -1,4 +1,4 @@
-import { getDatabase } from '../db/database';
+import { getDb } from '../db/database';
 import { storageService } from './storageService';
 import { realtimeService } from './realtimeService';
 import { UploadService } from './uploadService';
@@ -16,33 +16,31 @@ export class CleanupService {
     filesPurged: number;
     reservationsTimedOut: number;
   }> {
-    const db = getDatabase();
+    const db = getDb();
     const now = Date.now();
 
     // 1. Reconcile stale upload reservations (> 5 minutes pending)
-    const reservationsTimedOut = UploadService.cleanupStaleReservations();
+    const reservationsTimedOut = await UploadService.cleanupStaleReservations();
 
     // 2. Find expired or explicitly deleted rooms
-    const expiredRooms = db
-      .prepare(
-        `SELECT id, status 
-         FROM rooms 
-         WHERE expires_at <= ? OR status IN ('expired', 'deleted')`
-      )
-      .all(now) as { id: string; status: string }[];
+    const expiredRooms = await db.all<{ id: string; status: string }>(
+      `SELECT id, status 
+       FROM rooms 
+       WHERE expires_at <= ? OR status IN ('expired', 'deleted')`,
+      [now]
+    );
 
     let filesPurged = 0;
     let roomsPurged = 0;
 
     for (const room of expiredRooms) {
       // Find all file items for this room to physically purge them from storage
-      const fileItems = db
-        .prepare(
-          `SELECT object_key as objectKey 
-           FROM items 
-           WHERE room_id = ? AND type = 'file' AND object_key IS NOT NULL`
-        )
-        .all(room.id) as { objectKey: string }[];
+      const fileItems = await db.all<{ objectKey: string }>(
+        `SELECT object_key as objectKey 
+         FROM items 
+         WHERE room_id = ? AND type = 'file' AND object_key IS NOT NULL`,
+        [room.id]
+      );
 
       for (const item of fileItems) {
         try {
@@ -67,7 +65,7 @@ export class CleanupService {
       }
 
       // Purge database row (foreign keys cascade delete items, sessions, upload_reservations)
-      db.prepare(`DELETE FROM rooms WHERE id = ?`).run(room.id);
+      await db.run(`DELETE FROM rooms WHERE id = ?`, [room.id]);
       unregisterCreatedRoom(room.id);
       roomsPurged++;
     }
