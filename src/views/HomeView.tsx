@@ -1537,7 +1537,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '16px',
+                marginBottom: '20px',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1555,7 +1555,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     flexShrink: 0,
                   }}
                 >
-                  <ZapIcon size={20} color="#000000" />
+                  {joinModalMode === 'scan' ? (
+                    <CameraIcon size={20} color="#000000" />
+                  ) : (
+                    <ZapIcon size={20} color="#000000" />
+                  )}
                 </div>
                 <div>
                   <h3
@@ -1568,7 +1572,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       lineHeight: 1.2,
                     }}
                   >
-                    Join a Room
+                    {joinModalMode === 'scan' ? 'Scan Room QR' : 'Join a Room'}
                   </h3>
                   <p
                     style={{
@@ -1611,44 +1615,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="nb-join-mode-toggle" role="tablist" aria-label="Join room method">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={joinModalMode === 'code'}
-                className={`nb-join-mode-btn ${joinModalMode === 'code' ? 'active' : ''}`}
-                onClick={() => {
-                  setModalError(null);
-                  setJoinModalMode('code');
-                }}
-              >
-                <span>🔢 Enter Code</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={joinModalMode === 'scan'}
-                className={`nb-join-mode-btn ${joinModalMode === 'scan' ? 'active' : ''}`}
-                onClick={() => {
-                  setModalError(null);
-                  setJoinModalMode('scan');
-                }}
-              >
-                <CameraIcon size={16} />
-                <span>Scan QR</span>
-              </button>
-            </div>
-
             {/* Modal Body: QR Scanner or 4-Digit Manual Input */}
             {joinModalMode === 'scan' ? (
-              <QrScannerView
-                onScanSuccess={handleScanSuccess}
-                onSwitchToManual={() => {
-                  setModalError(null);
-                  setJoinModalMode('code');
-                }}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <QrScannerView
+                  onScanSuccess={handleScanSuccess}
+                  onSwitchToManual={() => {
+                    setModalError(null);
+                    setJoinModalMode('code');
+                  }}
+                />
+                <div style={{ textAlign: 'center', marginTop: '2px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalError(null);
+                      setJoinModalMode('code');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 800,
+                      fontSize: '12.5px',
+                      color: '#000000',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ← Enter 4-digit code instead
+                  </button>
+                </div>
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <RoomCodeInput
