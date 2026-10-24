@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Navbar, Card, Button } from './components/ui';
+import { DropletLogo } from './components/brand';
 import { HomeView } from './views/HomeView';
 import { RoomView } from './views/RoomView';
 import { ExpiredView } from './views/ExpiredView';
@@ -13,53 +14,125 @@ const STORAGE_KEY_ROOM = 'droplet_active_room';
 const STORAGE_KEY_TOKEN = 'droplet_session_token';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'home' | 'room' | 'info' | '404'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'room' | 'info' | '404' | 'joining'>('home');
   const [currentRoom, setCurrentRoom] = useState<RoomSummary | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [expiredReason, setExpiredReason] = useState<string | null>(null);
   const [initialJoinCode, setInitialJoinCode] = useState<string>('');
+  const [autoJoinCode, setAutoJoinCode] = useState<string>('');
   const [homeNotice, setHomeNotice] = useState<{
     variant: 'warning' | 'info' | 'error' | 'success';
     message: string;
   } | null>(null);
 
-  // Check URL query parameter and pathname on load
+  // Check URL query parameter and pathname on load (Auto-Join & Routing)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
-      const directCodeMatch = pathname.match(/^\/(?:join\/|room\/)?(\d{4})$/);
-      if (directCodeMatch) {
-        setInitialJoinCode(directCodeMatch[1]);
-        setActiveTab('home');
-      } else if (pathname !== '/' && pathname !== '' && pathname !== '/index.html') {
-        setActiveTab('404');
-      }
-
       const params = new URLSearchParams(window.location.search);
+
+      // 1. Explicit 404 tab requested
       if (params.get('tab') === '404' || params.get('preview') === '404') {
         setActiveTab('404');
-      }
-      const joinParam = params.get('join');
-      if (joinParam && /^\d{4}$/.test(joinParam)) {
-        setInitialJoinCode(joinParam);
+        return;
       }
 
-      // Handle popstate (browser back/forward button)
-      const handlePopState = () => {
-        const path = window.location.pathname;
-        const codeMatch = path.match(/^\/(?:join\/|room\/)?(\d{4})$/);
-        if (codeMatch) {
-          setInitialJoinCode(codeMatch[1]);
-          setActiveTab('home');
-        } else if (path !== '/' && path !== '' && path !== '/index.html') {
-          setActiveTab('404');
-        } else if (!currentRoom) {
-          setActiveTab('home');
-        }
-      };
-      window.addEventListener('popstate', handlePopState);
+      // 2. Extract potential 4-digit room code from pathname (/1234 or /join/1234)
+      const directCodeMatch = pathname.match(/^\/(?:join\/|room\/)?(\d{4})$/);
+      // Extract potential 4-digit room code from search query (?join=1234 or ?code=1234)
+      const queryJoin = params.get('join') || params.get('code');
+      const incomingCode = directCodeMatch
+        ? directCodeMatch[1]
+        : queryJoin && /^\d{4}$/.test(queryJoin.trim())
+        ? queryJoin.trim()
+        : null;
 
-      // Check localStorage for persisted session
+      // SCENARIO A: DIRECT AUTO-JOIN VIA QR CODE OR SHARE LINK
+      // Highest priority: immediately bypasses any stale localStorage session!
+      if (incomingCode) {
+        setAutoJoinCode(incomingCode);
+        setActiveTab('joining');
+
+        const performAutoJoin = async () => {
+          try {
+            // Check if user already holds a valid session token for this room in recent cache
+            const existing = recentRoomsService
+              .getRecentRooms()
+              .find((r) => r.code === incomingCode && r.token);
+
+            if (existing && existing.token) {
+              try {
+                const details = await api.getRoom(existing.id, existing.token);
+                if (details && details.room) {
+                  handleRoomJoined({ ...details.room, code: incomingCode }, existing.token);
+                  window.history.replaceState({}, '', '/');
+                  return;
+                }
+              } catch {
+                // Stale token; fall through to standard join
+              }
+            }
+
+            // Call API to join room
+            const joinResult = await api.joinRoom(incomingCode);
+            handleRoomJoined(joinResult.room, joinResult.sessionToken);
+
+            // Clean query/path parameter from URL without reloading
+            window.history.replaceState({}, '', '/');
+
+            // Celebration confetti!
+            try {
+              confetti({
+                particleCount: 32,
+                spread: 50,
+                origin: { y: 0.6 },
+                colors: ['#FFE000', '#000000', '#00D084'],
+                disableForReducedMotion: true,
+              });
+            } catch {
+              // Ignore confetti errors
+            }
+          } catch (err: any) {
+            // Clean URL on failure to avoid infinite error loops
+            window.history.replaceState({}, '', '/');
+
+            const errorMessage = err?.message || 'Could not join room.';
+            const errorCode = err?.code;
+
+            if (errorCode === 'ROOM_EXPIRED' || errorCode === 'ROOM_NOT_FOUND') {
+              setHomeNotice({
+                variant: 'warning',
+                message: `Room #${incomingCode} has expired or does not exist.`,
+              });
+            } else if (errorCode === 'LOCKOUT_ACTIVE' || err?.lockoutRemainingMs) {
+              const minutes = Math.ceil((err.lockoutRemainingMs || 300000) / 60000);
+              setHomeNotice({
+                variant: 'error',
+                message: `Too many failed join attempts. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`,
+              });
+            } else {
+              setHomeNotice({
+                variant: 'error',
+                message: `Failed to join room #${incomingCode}: ${errorMessage}`,
+              });
+            }
+
+            setInitialJoinCode(incomingCode);
+            setActiveTab('home');
+          }
+        };
+
+        performAutoJoin();
+        return;
+      }
+
+      // SCENARIO B: INVALID PATH ROUTING (404)
+      if (pathname !== '/' && pathname !== '' && pathname !== '/index.html') {
+        setActiveTab('404');
+        return;
+      }
+
+      // SCENARIO C: RESTORE PERSISTED ACTIVE ROOM FROM LOCALSTORAGE
       const savedRoom = localStorage.getItem(STORAGE_KEY_ROOM);
       const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
       if (savedRoom && savedToken) {
@@ -76,6 +149,7 @@ export const App: React.FC = () => {
             setCurrentRoom(parsed);
             setSessionToken(savedToken);
             setActiveTab('room');
+            return;
           } else {
             localStorage.removeItem(STORAGE_KEY_ROOM);
             localStorage.removeItem(STORAGE_KEY_TOKEN);
@@ -84,6 +158,26 @@ export const App: React.FC = () => {
           // Ignore invalid json
         }
       }
+
+      setActiveTab('home');
+
+      // Handle popstate (browser back/forward button)
+      const handlePopState = () => {
+        const path = window.location.pathname;
+        const codeMatch = path.match(/^\/(?:join\/|room\/)?(\d{4})$/);
+        if (codeMatch) {
+          setInitialJoinCode(codeMatch[1]);
+          setActiveTab('home');
+        } else if (path !== '/' && path !== '' && path !== '/index.html') {
+          setActiveTab('404');
+        } else if (!currentRoom) {
+          setActiveTab('home');
+        }
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
     }
   }, []);
 
@@ -214,7 +308,38 @@ export const App: React.FC = () => {
       />
 
       <main className={activeTab === 'home' ? undefined : 'nb-main-content'}>
-        {activeTab === '404' ? (
+        {activeTab === 'joining' ? (
+          <div className="nb-autojoin-page">
+            <div className="nb-autojoin-card">
+              <div className="nb-autojoin-badge">
+                <span className="pulse-dot" />
+                CONNECTING
+              </div>
+
+              <div className="nb-autojoin-mascot-wrapper">
+                <div className="nb-autojoin-spinner" />
+                <DropletLogo layout="icon-only" size="lg" priority />
+              </div>
+
+              <h2 className="nb-autojoin-title">Entering Room #{autoJoinCode}</h2>
+              <p className="nb-autojoin-subtitle">
+                Validating 4-digit code and establishing encrypted peer session...
+              </p>
+
+              <div className="nb-autojoin-progress-track">
+                <div className="nb-autojoin-progress-bar" />
+              </div>
+
+              <button
+                type="button"
+                className="nb-autojoin-cancel-btn"
+                onClick={handleGoHome}
+              >
+                Cancel and return home
+              </button>
+            </div>
+          </div>
+        ) : activeTab === '404' ? (
           <NotFoundView onGoHome={handleGoHome} />
         ) : expiredReason ? (
           <ExpiredView

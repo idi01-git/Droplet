@@ -3,7 +3,7 @@ import DropletLogo from '../brand/DropletLogo';
 import { ArrowRightIcon, QrCodeIcon } from '../icons';
 
 export interface NavbarProps {
-  activeTab?: 'home' | 'room' | 'info' | '404';
+  activeTab?: 'home' | 'room' | 'info' | '404' | 'joining';
   onSelectTab?: (tab: 'home' | 'room' | 'info' | '404') => void;
   onCreateRoom?: () => void;
   onJoinRoom?: () => void;

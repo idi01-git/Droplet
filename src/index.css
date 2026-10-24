@@ -1047,3 +1047,154 @@ input, textarea {
   }
 }
 
+/* ==========================================================================
+   Auto-Join Connecting Screen (Neo-Brutalist)
+   ========================================================================== */
+.nb-autojoin-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 88px);
+  padding: 24px 16px;
+  background-color: var(--color-background);
+}
+
+.nb-autojoin-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: #FFFFFF;
+  border: 2.5px solid #000000;
+  border-radius: 20px;
+  box-shadow: 6px 6px 0px #000000;
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: nbPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.nb-autojoin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #FFE000;
+  border: 2px solid #000000;
+  border-radius: 9999px;
+  padding: 4px 14px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.nb-autojoin-badge .pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #00D084;
+  border: 1.5px solid #000000;
+  animation: nbBlink 1.2s infinite ease-in-out;
+}
+
+.nb-autojoin-mascot-wrapper {
+  margin-bottom: 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+}
+
+.nb-autojoin-spinner {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 3px dashed #000000;
+  animation: nbSpin 4s linear infinite;
+}
+
+.nb-autojoin-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 4vw, 26px);
+  font-weight: 900;
+  color: #000000;
+  margin: 0 0 8px 0;
+}
+
+.nb-autojoin-subtitle {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #555555;
+  margin: 0 0 24px 0;
+  line-height: 1.4;
+}
+
+.nb-autojoin-progress-track {
+  width: 100%;
+  height: 14px;
+  background-color: #FFF8B8;
+  border: 2px solid #000000;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.nb-autojoin-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #FFE000,
+    #FFE000 12px,
+    #000000 12px,
+    #000000 16px
+  );
+  background-size: 200% 100%;
+  animation: nbStripes 1.2s linear infinite;
+}
+
+.nb-autojoin-cancel-btn {
+  margin-top: 20px;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #666666;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.nb-autojoin-cancel-btn:hover {
+  color: #000000;
+}
+
+@keyframes nbStripes {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+@keyframes nbSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes nbBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(0.75); }
+}
+
+@keyframes nbPopIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+
