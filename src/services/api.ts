@@ -93,7 +93,10 @@ class ApiClient {
 
     const json: ApiResponse<{ item: Item }> = await res.json();
     if (!res.ok || !json.success || !json.data) {
-      throw new Error(json.error?.message || 'Failed to post note.');
+      const err = new Error(json.error?.message || 'Failed to post note.');
+      (err as any).code = json.error?.code;
+      (err as any).status = res.status;
+      throw err;
     }
 
     return json.data;
@@ -110,7 +113,10 @@ class ApiClient {
 
     const json: ApiResponse<{ message: string }> = await res.json();
     if (!res.ok || !json.success) {
-      throw new Error(json.error?.message || 'Failed to delete item.');
+      const err = new Error(json.error?.message || 'Failed to delete item.');
+      (err as any).code = json.error?.code;
+      (err as any).status = res.status;
+      throw err;
     }
   }
 
@@ -138,7 +144,10 @@ class ApiClient {
       await initRes.json();
 
     if (!initRes.ok || !initJson.success || !initJson.data) {
-      throw new Error(initJson.error?.message || 'Failed to initiate upload.');
+      const err = new Error(initJson.error?.message || 'Failed to initiate upload.');
+      (err as any).code = initJson.error?.code;
+      (err as any).status = initRes.status;
+      throw err;
     }
 
     const { uploadId, uploadUrl, isDirectS3 } = initJson.data;
@@ -318,7 +327,10 @@ class ApiClient {
 
     const json: ApiResponse<{ message: string }> = await res.json();
     if (!res.ok || !json.success) {
-      throw new Error(json.error?.message || 'Failed to delete room.');
+      const err = new Error(json.error?.message || 'Failed to delete room.');
+      (err as any).code = json.error?.code;
+      (err as any).status = res.status;
+      throw err;
     }
   }
 }

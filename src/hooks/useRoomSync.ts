@@ -67,7 +67,14 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired, onRoomDeleted
       if (err.code === 'ROOM_NOT_FOUND') {
         handleRoomDeleted(err.message || 'Room was deleted by the owner.');
       } else if (err.code === 'ROOM_EXPIRED') {
-        handleRoomExpired(err.message || 'Room is no longer accessible.');
+        handleRoomExpired(err.message || 'Room has reached its 24-hour expiration or was closed.');
+      } else if (
+        err.code === 'UNAUTHORIZED' ||
+        err.status === 401 ||
+        err.message?.toLowerCase().includes('invalid session token') ||
+        err.message?.toLowerCase().includes('session token is missing')
+      ) {
+        handleRoomExpired('Your session has expired or is no longer valid. All temporary data was cleared.');
       } else {
         setError(err.message || 'Failed to refresh room items.');
       }
@@ -184,18 +191,44 @@ export function useRoomSync({ roomId, sessionToken, onRoomExpired, onRoomDeleted
   }, []);
 
   const postTextItem = async (text: string, type?: 'text' | 'link') => {
-    const res = await api.postTextItem(roomId, sessionToken, text, type);
-    // Optimistically add item if not yet received via WS
-    setItems((prev) => {
-      if (prev.some((i) => i.id === res.item.id)) return prev;
-      return [{ ...res.item, canDelete: true }, ...prev];
-    });
-    return res.item;
+    try {
+      const res = await api.postTextItem(roomId, sessionToken, text, type);
+      // Optimistically add item if not yet received via WS
+      setItems((prev) => {
+        if (prev.some((i) => i.id === res.item.id)) return prev;
+        return [{ ...res.item, canDelete: true }, ...prev];
+      });
+      return res.item;
+    } catch (err: any) {
+      if (
+        err.code === 'UNAUTHORIZED' ||
+        err.status === 401 ||
+        err.message?.toLowerCase().includes('invalid session token') ||
+        err.message?.toLowerCase().includes('session token is missing')
+      ) {
+        handleRoomExpired('Your session has expired or is no longer valid. All temporary data was cleared.');
+        return undefined as any;
+      }
+      throw err;
+    }
   };
 
   const deleteItem = async (itemId: string) => {
-    await api.deleteItem(roomId, itemId, sessionToken);
-    setItems((prev) => prev.filter((i) => i.id !== itemId));
+    try {
+      await api.deleteItem(roomId, itemId, sessionToken);
+      setItems((prev) => prev.filter((i) => i.id !== itemId));
+    } catch (err: any) {
+      if (
+        err.code === 'UNAUTHORIZED' ||
+        err.status === 401 ||
+        err.message?.toLowerCase().includes('invalid session token') ||
+        err.message?.toLowerCase().includes('session token is missing')
+      ) {
+        handleRoomExpired('Your session has expired or is no longer valid. All temporary data was cleared.');
+        return;
+      }
+      throw err;
+    }
   };
 
   return {

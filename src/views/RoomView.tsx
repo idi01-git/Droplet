@@ -225,6 +225,15 @@ export const RoomView: React.FC<RoomViewProps> = ({
           addOptimisticItem({ ...uploadedItem, canDelete: true });
           successfulCount++;
         } catch (err: any) {
+          if (
+            err.code === 'UNAUTHORIZED' ||
+            err.status === 401 ||
+            err.message?.toLowerCase().includes('invalid session token') ||
+            err.message?.toLowerCase().includes('expired')
+          ) {
+            onExpired('Your session has expired or is no longer valid. All temporary data was cleared.');
+            return;
+          }
           failedFiles.push({ name: file.name, error: err.message || 'Upload failed' });
         }
       }
@@ -320,6 +329,20 @@ export const RoomView: React.FC<RoomViewProps> = ({
       recentRoomsService.removeRecentRoom(room.code);
       onLeave();
     } catch (err: any) {
+      // If the session or room is already expired, invalid, or deleted on the server,
+      // gracefully exit rather than trapping the user with a dead error!
+      if (
+        err.code === 'UNAUTHORIZED' ||
+        err.code === 'ROOM_NOT_FOUND' ||
+        err.code === 'ROOM_EXPIRED' ||
+        err.message?.toLowerCase().includes('invalid session token') ||
+        err.message?.toLowerCase().includes('not found') ||
+        err.message?.toLowerCase().includes('expired')
+      ) {
+        recentRoomsService.removeRecentRoom(room.code);
+        onLeave();
+        return;
+      }
       setActionError(err.message || 'Failed to delete room.');
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -340,6 +363,10 @@ export const RoomView: React.FC<RoomViewProps> = ({
     }
   };
 
+  const isSessionError =
+    (actionError || syncError || '').toLowerCase().includes('invalid session token') ||
+    (actionError || syncError || '').toLowerCase().includes('session has expired');
+
   return (
     <div className="nb-room-view-container">
       {/* Error Alerts */}
@@ -347,9 +374,42 @@ export const RoomView: React.FC<RoomViewProps> = ({
         <div style={{ marginBottom: '16px' }}>
           <Alert
             variant="error"
-            message={actionError || syncError || ''}
-            onDismiss={() => setActionError(null)}
+            message={
+              isSessionError
+                ? 'Your session has expired or is no longer valid. The temporary room was closed.'
+                : actionError || syncError || ''
+            }
+            onDismiss={() => {
+              if (isSessionError) {
+                onLeave();
+              } else {
+                setActionError(null);
+              }
+            }}
           />
+          {isSessionError && (
+            <div style={{ marginTop: '10px', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={onLeave}
+                className="nb-button"
+                style={{
+                  padding: '8px 20px',
+                  backgroundColor: '#FFE000',
+                  border: '2px solid #000000',
+                  borderRadius: '10px',
+                  boxShadow: '2px 2px 0px #000000',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 900,
+                  fontSize: '14px',
+                  color: '#000000',
+                  cursor: 'pointer',
+                }}
+              >
+                ← Return to Home
+              </button>
+            </div>
+          )}
         </div>
       )}
 
