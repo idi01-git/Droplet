@@ -19,6 +19,47 @@ class ApiClient {
     return headers;
   }
 
+  private async parseResponse<T>(res: Response, defaultErrorMsg: string): Promise<T> {
+    const contentType = res.headers.get('content-type') || '';
+
+    // Check if the response is HTML instead of JSON (Render cold start, Cloudflare edge 502/503/504, or dev proxy error)
+    if (!contentType.includes('application/json')) {
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        const err = new Error(
+          'Server is currently waking up or temporarily busy. Please wait 10–15 seconds and try again.'
+        );
+        (err as any).status = res.status;
+        throw err;
+      }
+      const err = new Error(
+        res.status >= 500
+          ? 'Server temporarily unavailable. Please try again shortly.'
+          : defaultErrorMsg
+      );
+      (err as any).status = res.status;
+      throw err;
+    }
+
+    let json: any;
+    try {
+      json = await res.json();
+    } catch {
+      const err = new Error('Server returned an invalid response. Please try again.');
+      (err as any).status = res.status;
+      throw err;
+    }
+
+    if (!res.ok || !json.success || !json.data) {
+      const err = new Error(json.error?.message || defaultErrorMsg);
+      (err as any).code = json.error?.code;
+      (err as any).lockoutRemainingMs = json.error?.lockoutRemainingMs;
+      (err as any).status = res.status;
+      throw err;
+    }
+
+    return json.data;
+  }
+
   /**
    * Create a new room with an owner session
    */
@@ -28,12 +69,7 @@ class ApiClient {
       headers: this.getHeaders(),
     });
 
-    const json: ApiResponse<CreateRoomResponse> = await res.json();
-    if (!res.ok || !json.success || !json.data) {
-      throw new Error(json.error?.message || 'Failed to create room.');
-    }
-
-    return json.data;
+    return this.parseResponse<CreateRoomResponse>(res, 'Failed to create room.');
   }
 
   /**
@@ -46,15 +82,7 @@ class ApiClient {
       body: JSON.stringify({ code }),
     });
 
-    const json: ApiResponse<JoinRoomResponse> = await res.json();
-    if (!res.ok || !json.success || !json.data) {
-      const err = new Error(json.error?.message || 'Failed to join room.');
-      (err as any).code = json.error?.code;
-      (err as any).lockoutRemainingMs = json.error?.lockoutRemainingMs;
-      throw err;
-    }
-
-    return json.data;
+    return this.parseResponse<JoinRoomResponse>(res, 'Failed to join room.');
   }
 
   /**
@@ -66,14 +94,7 @@ class ApiClient {
       headers: this.getHeaders(token),
     });
 
-    const json: ApiResponse<RoomDetailsResponse> = await res.json();
-    if (!res.ok || !json.success || !json.data) {
-      const err = new Error(json.error?.message || 'Failed to retrieve room details.');
-      (err as any).code = json.error?.code;
-      throw err;
-    }
-
-    return json.data;
+    return this.parseResponse<RoomDetailsResponse>(res, 'Failed to retrieve room details.');
   }
 
   /**
@@ -91,15 +112,7 @@ class ApiClient {
       body: JSON.stringify({ text, type }),
     });
 
-    const json: ApiResponse<{ item: Item }> = await res.json();
-    if (!res.ok || !json.success || !json.data) {
-      const err = new Error(json.error?.message || 'Failed to post note.');
-      (err as any).code = json.error?.code;
-      (err as any).status = res.status;
-      throw err;
-    }
-
-    return json.data;
+    return this.parseResponse<{ item: Item }>(res, 'Failed to post note.');
   }
 
   /**
@@ -111,13 +124,7 @@ class ApiClient {
       headers: this.getHeaders(token),
     });
 
-    const json: ApiResponse<{ message: string }> = await res.json();
-    if (!res.ok || !json.success) {
-      const err = new Error(json.error?.message || 'Failed to delete item.');
-      (err as any).code = json.error?.code;
-      (err as any).status = res.status;
-      throw err;
-    }
+    await this.parseResponse<{ message?: string }>(res, 'Failed to delete item.');
   }
 
   /**
@@ -140,17 +147,14 @@ class ApiClient {
       }),
     });
 
-    const initJson: ApiResponse<{ uploadId: string; maxBytes: number; uploadUrl: string; isDirectS3?: boolean }> =
-      await initRes.json();
+    const initData = await this.parseResponse<{
+      uploadId: string;
+      maxBytes: number;
+      uploadUrl: string;
+      isDirectS3?: boolean;
+    }>(initRes, 'Failed to initiate upload.');
 
-    if (!initRes.ok || !initJson.success || !initJson.data) {
-      const err = new Error(initJson.error?.message || 'Failed to initiate upload.');
-      (err as any).code = initJson.error?.code;
-      (err as any).status = initRes.status;
-      throw err;
-    }
-
-    const { uploadId, uploadUrl, isDirectS3 } = initJson.data;
+    const { uploadId, uploadUrl, isDirectS3 } = initData;
 
     // Case A: Direct AWS S3 Upload via Pre-signed PUT URL (ZERO Node server RAM/bandwidth)
     if (isDirectS3 && uploadUrl.startsWith('http')) {
@@ -194,12 +198,12 @@ class ApiClient {
         }),
       });
 
-      const completeJson: ApiResponse<{ item: Item }> = await completeRes.json();
-      if (!completeRes.ok || !completeJson.success || !completeJson.data) {
-        throw new Error(completeJson.error?.message || 'Failed to confirm upload.');
-      }
+      const completeData = await this.parseResponse<{ item: Item }>(
+        completeRes,
+        'Failed to confirm upload.'
+      );
 
-      return completeJson.data.item;
+      return completeData.item;
     }
 
     // Case B: Fallback (Local Storage Driver / test environment): Multipart upload through Express
@@ -325,13 +329,7 @@ class ApiClient {
       headers: this.getHeaders(token),
     });
 
-    const json: ApiResponse<{ message: string }> = await res.json();
-    if (!res.ok || !json.success) {
-      const err = new Error(json.error?.message || 'Failed to delete room.');
-      (err as any).code = json.error?.code;
-      (err as any).status = res.status;
-      throw err;
-    }
+    await this.parseResponse<{ message?: string }>(res, 'Failed to delete room.');
   }
 }
 
