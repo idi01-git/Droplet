@@ -268,7 +268,8 @@ class ApiClient {
 
   /**
    * Download an authorized file. Uses short-lived pre-signed S3 URL if available,
-   * completely offloading file bandwidth and memory from the server.
+   * or a single-use download ticket for native streaming directly from the server.
+   * Completely eliminates client RAM buffering (res.blob) and triggers instant browser download.
    */
   async downloadFile(roomId: string, itemId: string, token: string, filename: string): Promise<void> {
     try {
@@ -279,24 +280,31 @@ class ApiClient {
 
       if (urlRes.ok) {
         const urlJson: ApiResponse<{ url: string; isDirect: boolean }> = await urlRes.json();
-        if (urlJson.success && urlJson.data) {
-          if (urlJson.data.isDirect) {
-            // Direct download from AWS S3 pre-signed URL (zero server RAM/bandwidth!)
-            const a = document.createElement('a');
-            a.href = urlJson.data.url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            return;
-          }
+        if (urlJson.success && urlJson.data?.url) {
+          const downloadUrl = urlJson.data.url.startsWith('http')
+            ? urlJson.data.url
+            : `${window.location.origin}${urlJson.data.url}`;
+
+          // Trigger native browser download shelf immediately (0 bytes JS RAM consumed!)
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = filename;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            if (document.body.contains(a)) {
+              document.body.removeChild(a);
+            }
+          }, 1500);
+          return;
         }
       }
     } catch {
-      // Fall through to streaming endpoint
+      // Fall through to streaming fetch fallback if network fails
     }
 
-    // Fallback: Stream directly through Node server (local driver / tests)
+    // Safety fallback: Stream via in-memory blob only if URL ticket retrieval failed
     const res = await fetch(`${BASE_URL}/rooms/${roomId}/items/${itemId}/download`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -318,9 +326,42 @@ class ApiClient {
   }
 
   /**
-   * Download all room files and notes as a single ZIP archive
+   * Download all room files and notes as a single ZIP archive.
+   * Uses download tickets to stream directly into the browser's download manager.
    */
   async downloadAllZip(roomId: string, token: string, roomCode: string): Promise<void> {
+    try {
+      const urlRes = await fetch(`${BASE_URL}/rooms/${roomId}/download-all-url`, {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      });
+
+      if (urlRes.ok) {
+        const urlJson: ApiResponse<{ url: string }> = await urlRes.json();
+        if (urlJson.success && urlJson.data?.url) {
+          const downloadUrl = urlJson.data.url.startsWith('http')
+            ? urlJson.data.url
+            : `${window.location.origin}${urlJson.data.url}`;
+
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `droplet-room-${roomCode}.zip`;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            if (document.body.contains(a)) {
+              document.body.removeChild(a);
+            }
+          }, 1500);
+          return;
+        }
+      }
+    } catch {
+      // Fall through to streaming fetch fallback
+    }
+
+    // Fallback: in-memory blob
     const res = await fetch(`${BASE_URL}/rooms/${roomId}/download-all`, {
       method: 'GET',
       headers: this.getHeaders(token),

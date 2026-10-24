@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/database';
 import { realtimeService } from './realtimeService';
 import { storageService } from './storageService';
+import { downloadTicketService } from './downloadTicketService';
 import { DROPLET_LIMITS } from '../../../shared/limits';
 import { AppError } from '../middleware/errorHandler';
 import { isValidSafeUrl, sanitizeFilename } from '../utils/sanitizer';
@@ -205,8 +206,11 @@ export class ItemService {
       }
     }
 
+    // Fallback: Local disk streaming with ephemeral 60s single-use download ticket
+    const ticket = downloadTicketService.createTicket(roomId, itemId, _session.id, DROPLET_LIMITS.S3_PRESIGNED_DOWNLOAD_TTL_SECONDS);
+
     return {
-      url: `/api/rooms/${roomId}/items/${itemId}/download`,
+      url: `/api/rooms/${roomId}/items/${itemId}/download?ticket=${ticket}`,
       isDirect: false,
       filename: safeFilename,
       sizeBytes: item.sizeBytes,

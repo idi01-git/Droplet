@@ -8,6 +8,7 @@ export interface FileItemRowProps {
   sizeBytes: number;
   mimeType?: string;
   downloadUrl?: string;
+  isDownloading?: boolean;
   onDownload: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
@@ -17,6 +18,7 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
   filename,
   sizeBytes,
   mimeType = '',
+  isDownloading = false,
   onDownload,
   onDelete,
   canDelete = false,
@@ -158,9 +160,10 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
       >
         <button
           onClick={onDownload}
+          disabled={isDownloading}
           className="nb-file-btn"
-          title="Download file"
-          aria-label={`Download ${filename}`}
+          title={isDownloading ? 'Preparing download...' : 'Download file'}
+          aria-label={isDownloading ? `Downloading ${filename}` : `Download ${filename}`}
           style={{
             backgroundColor: 'var(--color-primary)',
             color: 'var(--color-ink)',
@@ -174,11 +177,29 @@ export const FileItemRow: React.FC<FileItemRowProps> = ({
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
             fontSize: '12.5px',
-            cursor: 'pointer',
+            cursor: isDownloading ? 'wait' : 'pointer',
+            opacity: isDownloading ? 0.8 : 1,
+            pointerEvents: isDownloading ? 'none' : 'auto',
           }}
         >
-          <DownloadIcon size={15} />
-          <span className="hide-on-mobile">GET</span>
+          {isDownloading ? (
+            <svg
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ animation: 'spin 0.8s linear infinite' }}
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          ) : (
+            <DownloadIcon size={15} />
+          )}
+          <span className="hide-on-mobile">{isDownloading ? 'GETTING...' : 'GET'}</span>
         </button>
 
         {canDelete && onDelete && (

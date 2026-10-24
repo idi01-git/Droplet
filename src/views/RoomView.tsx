@@ -62,6 +62,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [showQrModal, setShowQrModal] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isClearingNotes, setIsClearingNotes] = useState(false);
+  const [downloadingItemIds, setDownloadingItemIds] = useState<Set<string>>(new Set());
 
   // File Upload & Drag State
   const [isDragging, setIsDragging] = useState(false);
@@ -307,10 +308,19 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   const handleFileDownload = async (item: any) => {
+    setDownloadingItemIds((prev) => new Set(prev).add(item.id));
     try {
       await api.downloadFile(room.id, item.id, sessionToken, item.filename || 'download');
     } catch (err: any) {
       setActionError(err.message || 'Failed to download file.');
+    } finally {
+      setTimeout(() => {
+        setDownloadingItemIds((prev) => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+      }, 1200);
     }
   };
 
@@ -630,6 +640,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                     filename={file.filename || 'uploaded-file'}
                     sizeBytes={file.sizeBytes}
                     mimeType={file.mimeType}
+                    isDownloading={downloadingItemIds.has(file.id)}
                     onDownload={() => handleFileDownload(file)}
                     canDelete={file.canDelete ?? room.isOwner}
                     onDelete={() => deleteItem(file.id)}

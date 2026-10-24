@@ -101,10 +101,12 @@ export class S3StorageDriver implements StorageDriver {
 
   constructor() {
     this.bucket = process.env.AWS_BUCKET_NAME || process.env.R2_BUCKET_NAME || '';
-    const region = process.env.AWS_REGION || 'eu-north-1';
+    const endpoint = process.env.AWS_ENDPOINT || process.env.R2_ENDPOINT;
+    // Default region: 'auto' for Cloudflare R2 / S3-compatible endpoints; 'ap-south-1' (Mumbai) for AWS S3
+    const defaultRegion = endpoint ? 'auto' : 'ap-south-1';
+    const region = process.env.AWS_REGION || process.env.R2_REGION || defaultRegion;
     const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY;
-    const endpoint = process.env.AWS_ENDPOINT || process.env.R2_ENDPOINT;
 
     this.client = new S3Client({
       region,
@@ -221,12 +223,16 @@ export class S3StorageDriver implements StorageDriver {
   ): Promise<string | null> {
     if (!this.bucket) return null;
     try {
+      const safeAscii = filename ? filename.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '') : 'download';
+      const utf8Encoded = filename ? encodeURIComponent(filename) : 'download';
+      const disposition = filename
+        ? `attachment; filename="${safeAscii}"; filename*=UTF-8''${utf8Encoded}`
+        : 'attachment';
+
       const command = new GetObjectCommand({
         Bucket: this.bucket,
         Key: key,
-        ResponseContentDisposition: filename
-          ? `attachment; filename="${encodeURIComponent(filename)}"`
-          : 'attachment',
+        ResponseContentDisposition: disposition,
       });
       return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
     } catch (err) {
@@ -367,9 +373,10 @@ class StorageService {
 
   constructor() {
     const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
+    const hasS3Config = Boolean(process.env.AWS_BUCKET_NAME || process.env.R2_BUCKET_NAME);
     if (process.env.NODE_ENV === 'test' && !process.env.TEST_STORAGE_DRIVER) {
       this.driver = new LocalStorageDriver();
-    } else if (driverType === 's3' || driverType === 'hybrid') {
+    } else if (driverType === 's3' || driverType === 'hybrid' || (!driverType && hasS3Config)) {
       this.driver = new HybridStorageDriver();
     } else {
       this.driver = new LocalStorageDriver();
@@ -378,6 +385,14 @@ class StorageService {
 
   public setDriver(driver: StorageDriver): void {
     this.driver = driver;
+  }
+
+  public getDriverType(): string {
+    if (this.driver instanceof HybridStorageDriver) {
+      const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
+      return driverType === 'hybrid' ? 'hybrid_s3' : 's3_direct';
+    }
+    return 'local_disk';
   }
 
   /**
@@ -390,8 +405,10 @@ class StorageService {
       return `loc_${id}`;
     }
     const driverType = process.env.STORAGE_DRIVER?.toLowerCase();
+    const hasS3Config = Boolean(process.env.AWS_BUCKET_NAME || process.env.R2_BUCKET_NAME);
+    const isS3Direct = driverType === 's3' || (!driverType && hasS3Config);
 
-    if (driverType === 's3') {
+    if (isS3Direct) {
       const threshold = process.env.S3_THRESHOLD_BYTES !== undefined
         ? parseInt(process.env.S3_THRESHOLD_BYTES, 10)
         : 0;

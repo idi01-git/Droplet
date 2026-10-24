@@ -3,6 +3,7 @@ import { getDb } from '../db/database';
 import { hashToken } from '../utils/crypto';
 import { AppError } from './errorHandler';
 import { Room, RoomSession } from '../../../shared/types';
+import { downloadTicketService } from '../services/downloadTicketService';
 
 // Extend Express Request type
 declare global {
@@ -28,6 +29,67 @@ export function extractSessionToken(req: Request): string | null {
 }
 
 export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  // Support ephemeral single-use download tickets for browser-native streaming
+  const ticket = typeof req.query?.ticket === 'string' ? req.query.ticket : null;
+
+  if (ticket) {
+    const roomId = req.params?.roomId;
+    const itemId = req.params?.itemId || 'all';
+
+    if (!roomId) {
+      return next(new AppError('UNAUTHORIZED', 'Invalid download context.', 401));
+    }
+
+    const ticketResult = downloadTicketService.verifyAndConsumeTicket(ticket, roomId, itemId);
+    if (!ticketResult) {
+      return next(new AppError('UNAUTHORIZED', 'Download ticket is invalid or has expired.', 401));
+    }
+
+    const db = getDb();
+    try {
+      const sessionRow = await db.get<RoomSession>(
+        `SELECT id, room_id as roomId, token_hash as tokenHash, role, created_at as createdAt, expires_at as expiresAt, revoked_at as revokedAt
+         FROM sessions 
+         WHERE id = ?`,
+        [ticketResult.sessionId]
+      );
+
+      if (!sessionRow) {
+        return next(new AppError('UNAUTHORIZED', 'Invalid session.', 401));
+      }
+
+      if (sessionRow.revokedAt) {
+        return next(new AppError('ROOM_NOT_FOUND', 'Room has been deleted.', 404));
+      }
+
+      const now = Date.now();
+      if (now > sessionRow.expiresAt) {
+        return next(new AppError('ROOM_EXPIRED', 'Session has expired.', 410));
+      }
+
+      const roomRow = await db.get<Room>(
+        `SELECT id, created_at as createdAt, expires_at as expiresAt, status, used_bytes as usedBytes, reserved_bytes as reservedBytes, file_count as fileCount
+         FROM rooms 
+         WHERE id = ?`,
+        [sessionRow.roomId]
+      );
+
+      if (!roomRow || roomRow.status === 'deleted') {
+        return next(new AppError('ROOM_NOT_FOUND', 'Room not found or has been deleted.', 404));
+      }
+
+      if (now > roomRow.expiresAt || roomRow.status === 'expired') {
+        return next(new AppError('ROOM_EXPIRED', 'Room has expired and is no longer accessible.', 410));
+      }
+
+      req.session = sessionRow;
+      req.room = roomRow;
+      return next();
+    } catch (err) {
+      return next(err);
+    }
+  }
+
   const token = extractSessionToken(req);
   if (!token) {
     return next(new AppError('UNAUTHORIZED', 'Session token is missing.', 401));

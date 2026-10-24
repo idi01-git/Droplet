@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { RoomService } from '../services/roomService';
 import { ArchiveService } from '../services/archiveService';
 import { realtimeService } from '../services/realtimeService';
+import { downloadTicketService } from '../services/downloadTicketService';
 import { requireAuth, requireOwner } from '../middleware/auth';
 import {
   rateLimitRoomCreation,
@@ -144,6 +145,28 @@ router.delete(
       res.status(200).json({
         success: true,
         data: { message: 'Room successfully deleted.' },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * GET /api/rooms/:roomId/download-all-url - Get short-lived authorized download ticket URL for ZIP archive
+ */
+router.get(
+  '/:roomId/download-all-url',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<{ url: string }>>, next: NextFunction) => {
+    try {
+      const { roomId } = req.params;
+      const ticket = downloadTicketService.createTicket(roomId, 'all', req.session!.id);
+      res.status(200).json({
+        success: true,
+        data: {
+          url: `/api/rooms/${roomId}/download-all?ticket=${ticket}`,
+        },
       });
     } catch (err) {
       next(err);

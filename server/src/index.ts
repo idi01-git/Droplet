@@ -12,6 +12,7 @@ import uploadsRouter from './routes/uploads';
 import { errorHandler } from './middleware/errorHandler';
 import { realtimeService } from './services/realtimeService';
 import { CleanupService } from './services/cleanupService';
+import { storageService } from './services/storageService';
 
 // Initialize SQLite / Serverless LibSQL database
 initDatabase();
@@ -37,6 +38,7 @@ app.get('/api/health', (_req, res) => {
     uptime: process.uptime(),
     timestamp: Date.now(),
     database: db.isServerless ? 'turso_serverless' : 'sqlite_local',
+    storage: storageService.getDriverType(),
     limits: {
       roomLifetimeMs: DROPLET_LIMITS.ROOM_LIFETIME_MS,
       maxFilesPerRoom: DROPLET_LIMITS.MAX_FILES_PER_ROOM,
