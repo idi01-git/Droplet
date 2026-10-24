@@ -1477,20 +1477,40 @@ export const HomeView: React.FC<HomeViewProps> = ({
           >
             <span>Drop it. Pick it up. Let it disappear.</span>
             <span style={{ color: '#A1A1AA' }}>•</span>
-            <span style={{ fontSize: '13px', color: '#18181B', fontWeight: 700 }}>
-              Made by{' '}
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13px',
+                color: '#18181B',
+                fontWeight: 700,
+              }}
+            >
+              Crafted with ⚡ by{' '}
               <a
                 href="https://github.com/idi01-git"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="nb-button"
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: '#FFE000',
                   color: '#000000',
+                  border: '1.5px solid #000000',
+                  borderRadius: '6px',
+                  boxShadow: '1.5px 1.5px 0px #000000',
+                  padding: '2px 8px',
+                  fontFamily: 'var(--font-display)',
                   fontWeight: 900,
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '3px',
+                  fontSize: '12px',
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
                 }}
               >
-                shivang
+                Shivang ↗
               </a>
             </span>
           </div>
