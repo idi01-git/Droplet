@@ -72,6 +72,20 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [currentUploadName, setCurrentUploadName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
+
+  const handleCancelUpload = () => {
+    if (uploadAbortControllerRef.current) {
+      uploadAbortControllerRef.current.abort();
+      uploadAbortControllerRef.current = null;
+    }
+    setIsUploading(false);
+    setUploadProgress(0);
+    setCurrentUploadName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Keyboard shortcut listener: Esc closes modals
   useEffect(() => {
@@ -218,26 +232,43 @@ export const RoomView: React.FC<RoomViewProps> = ({
     setIsUploading(true);
     setActionError(null);
 
+    const abortController = new AbortController();
+    uploadAbortControllerRef.current = abortController;
+    const signal = abortController.signal;
+
     const totalFiles = files.length;
     let successfulCount = 0;
     const failedFiles: { name: string; error: string }[] = [];
 
     try {
       for (let i = 0; i < totalFiles; i++) {
+        if (signal.aborted) {
+          break;
+        }
+
         const file = files[i];
         const label = totalFiles > 1 ? `(${i + 1}/${totalFiles}) ${file.name}` : file.name;
         setCurrentUploadName(label);
         setUploadProgress(0);
 
         try {
-          const uploadedItem = await api.uploadFile(room.id, sessionToken, file, (progress) => {
-            const overall = Math.round(((i + progress / 100) / totalFiles) * 100);
-            setUploadProgress(overall);
-          });
+          const uploadedItem = await api.uploadFile(
+            room.id,
+            sessionToken,
+            file,
+            (progress) => {
+              const overall = Math.round(((i + progress / 100) / totalFiles) * 100);
+              setUploadProgress(overall);
+            },
+            signal
+          );
           // Immediately show file with delete button without needing a page refresh
           addOptimisticItem({ ...uploadedItem, canDelete: true });
           successfulCount++;
         } catch (err: any) {
+          if (signal.aborted || err.name === 'AbortError') {
+            break;
+          }
           if (
             err.code === 'UNAUTHORIZED' ||
             err.status === 401 ||
@@ -266,12 +297,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
         }
       }
 
-      if (failedFiles.length > 0) {
+      if (failedFiles.length > 0 && !signal.aborted) {
         setActionError(
           `${successfulCount} of ${totalFiles} file(s) uploaded. Failed: ${failedFiles.map((f) => `"${f.name}" (${f.error})`).join(', ')}`
         );
       }
     } finally {
+      uploadAbortControllerRef.current = null;
       setIsUploading(false);
       setUploadProgress(0);
       setCurrentUploadName('');
@@ -604,12 +636,14 @@ export const RoomView: React.FC<RoomViewProps> = ({
               onChange={handleFileInputChange}
             />
 
-            {/* Active Upload Progress */}
+            {/* Active Upload Progress with Cancel Cross Button */}
             {isUploading && (
               <div style={{ marginBottom: '16px' }}>
                 <ProgressBar
                   progress={uploadProgress}
                   label={`Uploading: ${currentUploadName}`}
+                  onCancel={handleCancelUpload}
+                  cancelTitle="Cancel file upload"
                 />
               </div>
             )}

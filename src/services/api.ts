@@ -156,12 +156,18 @@ class ApiClient {
     roomId: string,
     token: string,
     file: File,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    signal?: AbortSignal
   ): Promise<Item> {
+    if (signal?.aborted) {
+      throw new DOMException('Upload aborted', 'AbortError');
+    }
+
     // Phase 1: Initiate & reserve quota
     const initRes = await fetch(`${BASE_URL}/rooms/${roomId}/uploads/initiate`, {
       method: 'POST',
       headers: this.getHeaders(token),
+      signal,
       body: JSON.stringify({
         filename: file.name,
         sizeBytes: file.size,
@@ -185,6 +191,19 @@ class ApiClient {
         xhr.open('PUT', uploadUrl);
         xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
 
+        const onAbort = () => {
+          xhr.abort();
+          reject(new DOMException('Upload aborted', 'AbortError'));
+        };
+
+        if (signal) {
+          if (signal.aborted) {
+            onAbort();
+            return;
+          }
+          signal.addEventListener('abort', onAbort, { once: true });
+        }
+
         if (xhr.upload && onProgress) {
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
@@ -195,6 +214,7 @@ class ApiClient {
         }
 
         xhr.onload = () => {
+          if (signal) signal.removeEventListener('abort', onAbort);
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
@@ -203,6 +223,7 @@ class ApiClient {
         };
 
         xhr.onerror = () => {
+          if (signal) signal.removeEventListener('abort', onAbort);
           reject(new Error('Network error during S3 direct upload.'));
         };
 
@@ -213,6 +234,7 @@ class ApiClient {
       const completeRes = await fetch(`${BASE_URL}/rooms/${roomId}/uploads/${uploadId}/complete`, {
         method: 'POST',
         headers: this.getHeaders(token),
+        signal,
         body: JSON.stringify({
           filename: file.name,
           sizeBytes: file.size,
@@ -234,6 +256,19 @@ class ApiClient {
       xhr.open('POST', `${BASE_URL}/rooms/${roomId}/uploads/${uploadId}/complete`);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
+      const onAbort = () => {
+        xhr.abort();
+        reject(new DOMException('Upload aborted', 'AbortError'));
+      };
+
+      if (signal) {
+        if (signal.aborted) {
+          onAbort();
+          return;
+        }
+        signal.addEventListener('abort', onAbort, { once: true });
+      }
+
       if (xhr.upload && onProgress) {
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
@@ -244,6 +279,7 @@ class ApiClient {
       }
 
       xhr.onload = () => {
+        if (signal) signal.removeEventListener('abort', onAbort);
         try {
           const json: ApiResponse<{ item: Item }> = JSON.parse(xhr.responseText);
           if (xhr.status >= 200 && xhr.status < 300 && json.success && json.data) {
@@ -257,6 +293,7 @@ class ApiClient {
       };
 
       xhr.onerror = () => {
+        if (signal) signal.removeEventListener('abort', onAbort);
         reject(new Error('Network error during upload.'));
       };
 

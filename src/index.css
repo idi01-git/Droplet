@@ -619,6 +619,7 @@ input, textarea {
   .nb-file-btn {
     padding: 6px 8px !important;
     font-size: 11.5px !important;
+    min-width: unset !important;
   }
 }
 

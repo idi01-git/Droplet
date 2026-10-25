@@ -5,6 +5,8 @@ export interface ProgressBarProps {
   label?: string;
   showPercentage?: boolean;
   color?: string;
+  onCancel?: () => void;
+  cancelTitle?: string;
 }
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({
@@ -12,6 +14,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   label = 'Uploading...',
   showPercentage = true,
   color = 'var(--color-primary)',
+  onCancel,
+  cancelTitle,
 }) => {
   const clampedProgress = Math.min(100, Math.max(0, Math.round(progress)));
 
@@ -53,9 +57,57 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         >
           {label}
         </span>
-        {showPercentage && (
-          <span style={{ flexShrink: 0, fontWeight: 800 }}>{clampedProgress}%</span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {showPercentage && (
+            <span style={{ fontWeight: 800 }}>{clampedProgress}%</span>
+          )}
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              title={cancelTitle || 'Cancel upload'}
+              aria-label={cancelTitle || 'Cancel upload'}
+              className="nb-progress-cancel-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '22px',
+                height: '22px',
+                padding: 0,
+                backgroundColor: 'var(--color-surface, #FFFFFF)',
+                color: 'var(--color-ink, #000000)',
+                border: '1.5px solid var(--color-ink, #000000)',
+                borderRadius: 'var(--radius-sm, 4px)',
+                boxShadow: '1px 1px 0px var(--color-ink, #000000)',
+                cursor: 'pointer',
+                transition: 'all 0.12s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-error, #FF3366)';
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-surface, #FFFFFF)';
+                e.currentTarget.style.color = 'var(--color-ink, #000000)';
+              }}
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div
