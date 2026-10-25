@@ -513,9 +513,16 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 }}
               />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
-                  {composerText.length > 0 ? `${(composerText.length / 1024).toFixed(1)} KB / 100 KB` : 'Max 100 KiB (for raw code/scripts, attach as file)'}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)', minWidth: 0, lineHeight: 1.35 }}>
+                  {composerText.length > 0 ? (
+                    `${(composerText.length / 1024).toFixed(1)} KB / 100 KB`
+                  ) : (
+                    <>
+                      <span>Max 100 KiB</span>{' '}
+                      <span className="nb-composer-hint-break">(for raw code/scripts, attach as file)</span>
+                    </>
+                  )}
                 </span>
 
                 <Button
@@ -525,8 +532,9 @@ export const RoomView: React.FC<RoomViewProps> = ({
                   disabled={!composerText.trim()}
                   rightIcon={<SendIcon size={16} />}
                   onClick={handleSendText}
+                  style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                 >
-                  Drop Item
+                  Drop<span className="hide-on-mobile">&nbsp;Item</span>
                 </Button>
               </div>
             </div>

@@ -1038,8 +1038,16 @@ input, textarea {
   text-align: center;
 }
 
+.nb-composer-hint-break {
+  display: inline;
+}
+
 /* Responsive visibility: hide labels on mobile viewports (< 640px) while keeping icons */
 @media (max-width: 640px) {
+  .nb-composer-hint-break {
+    display: block !important;
+    margin-top: 1px;
+  }
   .hide-on-mobile {
     display: none !important;
   }
