@@ -21,6 +21,10 @@ services:
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
       - key: DATA_DIR
         value: ./data
       - key: UPLOAD_DIR

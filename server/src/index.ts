@@ -31,13 +31,25 @@ app.use(cors());
 app.use(express.json({ limit: `${DROPLET_LIMITS.MAX_TEXT_SIZE_BYTES}b` }));
 
 // Health check endpoint (Spec Section 12)
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', async (_req, res) => {
   const db = getDb();
+  let dbStatus = 'ok';
+  let dbError: string | undefined;
+
+  try {
+    await db.get('SELECT 1');
+  } catch (err: any) {
+    dbStatus = 'error';
+    dbError = err?.message || String(err);
+  }
+
   res.json({
-    status: 'ok',
+    status: dbStatus === 'ok' ? 'ok' : 'degraded',
     uptime: process.uptime(),
     timestamp: Date.now(),
     database: db.isServerless ? 'turso_serverless' : 'sqlite_local',
+    databaseStatus: dbStatus,
+    ...(dbError && { databaseError: dbError }),
     storage: storageService.getDriverType(),
     limits: {
       roomLifetimeMs: DROPLET_LIMITS.ROOM_LIFETIME_MS,
